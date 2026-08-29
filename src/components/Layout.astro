@@ -4,6 +4,7 @@ import frauncesLatin from '@fontsource-variable/fraunces/files/fraunces-latin-wg
 import frauncesLatinItalic from '@fontsource-variable/fraunces/files/fraunces-latin-wght-italic.woff2';
 import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2';
 import { SITE } from '../config/site';
+import { UI, type Lang } from '../i18n/ui';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 
@@ -23,7 +24,7 @@ interface Props {
 }
 
 const { title, description = SITE.description, noindex = false } = Astro.props;
-const fullTitle = title === SITE.title ? title : `${title} — ${SITE.title}`;
+const fullTitle = title === SITE.name ? title : `${title} — ${SITE.name}`;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 ---
 
@@ -78,6 +79,8 @@ const canonical = new URL(Astro.url.pathname, SITE.url).href;
     <Footer />
     <button class="back-top glass" data-back-top aria-label="Back to top">↑</button>
     <script>
+      import { UI } from '../i18n/ui';
+
       // 滚动渐显
       const io = new IntersectionObserver(
         (entries) => {
@@ -91,6 +94,40 @@ const canonical = new URL(Astro.url.pathname, SITE.url).href;
         { threshold: 0.08 }
       );
       document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+
+      // ── 中英界面切换 ───────────────────────────────────────
+      const currentLang = (): 'zh' | 'en' => {
+        try {
+          return localStorage.getItem('blogb-lang') === 'en' ? 'en' : 'zh';
+        } catch {
+          return 'zh';
+        }
+      };
+      const applyLang = () => {
+        const lang = currentLang();
+        const dict = UI[lang];
+        document.documentElement.setAttribute('data-lang', lang);
+        document.querySelectorAll('[data-i18n]').forEach((el) => {
+          const key = el.getAttribute('data-i18n');
+          if (key && dict[key]) el.textContent = dict[key];
+        });
+        document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+          const key = el.getAttribute('data-i18n-ph');
+          if (key && dict[key]) el.setAttribute('placeholder', dict[key]);
+        });
+        document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
+          btn.textContent = lang === 'zh' ? 'EN' : '中文';
+        });
+      };
+      applyLang();
+      document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          try {
+            localStorage.setItem('blogb-lang', currentLang() === 'zh' ? 'en' : 'zh');
+          } catch {}
+          applyLang();
+        });
+      });
 
       // 主题切换
       const metaTheme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');

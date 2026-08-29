@@ -13,10 +13,10 @@ const { posts, total, pages } = await listPublishedPosts(e, page, SITE.pageSize)
 <Layout title={SITE.title}>
   <section class="container section" style="padding-bottom: 1rem">
     <div data-reveal>
-      <p class="label">JOURNAL · 日志</p>
-      <h1 class="display-1" style="margin-block: 1rem 0.6rem">你好，这里是我的博客。</h1>
-      <p class="muted" style="max-width: 36rem; font-family: var(--serif); font-size: 1.05rem">
-        摄影、观看与生活的随笔。共 {total} 篇。
+      <p class="label" data-i18n="home.label">JOURNAL · 日志</p>
+      <h1 class="display-1" style="margin-block: 1rem 0.6rem" data-i18n="home.hello">你好，这里是我的博客。</h1>
+      <p class="muted" style="max-width: 36rem; font-family: var(--serif); font-size: 1.05rem" data-i18n="home.sub">
+        摄影、观看与生活的随笔。
       </p>
     </div>
   </section>
@@ -25,7 +25,7 @@ const { posts, total, pages } = await listPublishedPosts(e, page, SITE.pageSize)
     {
       posts.length === 0 ? (
         <div class="glass glass-card text-center" style="padding: 4rem 1rem">
-          <p class="muted">还没有文章。{total === 0 ? '站长正在写第一篇。' : ''}</p>
+          <p class="muted" data-i18n="home.empty">还没有文章。站长正在写第一篇。</p>
         </div>
       ) : (
         <div class="post-list">
@@ -41,8 +41,8 @@ const { posts, total, pages } = await listPublishedPosts(e, page, SITE.pageSize)
                   <h2 class="post-title"><a href={`/post/${post.slug}`}>{post.title}</a></h2>
                   <p class="post-meta">
                     <span>{fmtDate(post.published_at)}</span>
-                    <span>{readMinutes(post.content_md)} 分钟阅读</span>
-                    <span>{post.comment_count ?? 0} 条评论</span>
+                    <span>{readMinutes(post.content_md)} <span data-i18n="home.minutes">分钟阅读</span></span>
+                    <span>{post.comment_count ?? 0} <span data-i18n="home.comments">条评论</span></span>
                     {
                       post.author_avatar && (
                         <span style="display:inline-flex;align-items:center;gap:0.35rem">
@@ -70,7 +70,7 @@ const { posts, total, pages } = await listPublishedPosts(e, page, SITE.pageSize)
 
     {
       pages > 1 && (
-        <nav class="pagination" aria-label="分页">
+        <nav class="pagination" aria-label="Pagination">
           {
             Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
               n === page ? (

@@ -10,40 +10,40 @@ const next = Astro.url.searchParams.get('next') || '/';
 <Layout title="注册" noindex>
   <section class="container">
     <div class="glass auth-panel" data-reveal>
-      <h1 class="auth-title">注册</h1>
-      <p class="muted small" style="margin-bottom: 1.6rem">用邮箱注册，我们会发送验证码。</p>
+      <h1 class="auth-title" data-i18n="auth.regTitle">注册</h1>
+      <p class="muted small" style="margin-bottom: 1.6rem" data-i18n="auth.regSub">用邮箱注册，我们会发送验证码。</p>
 
       <!-- 第一步：填写信息 + 发送验证码 -->
       <form id="reg-form" data-next={next}>
         <div class="field">
-          <label class="field-label" for="reg-email">邮箱</label>
+          <label class="field-label" for="reg-email" data-i18n="auth.email">邮箱</label>
           <input class="input" id="reg-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" />
         </div>
         <div class="field">
-          <label class="field-label" for="reg-username">用户名</label>
-          <input class="input" id="reg-username" name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]{3,20}" placeholder="3-20 位字母/数字/下划线" />
-          <span class="form-hint">用于你的个人主页地址：/u/你的用户名</span>
+          <label class="field-label" for="reg-username" data-i18n="auth.username">用户名</label>
+          <input class="input" id="reg-username" name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]{3,20}" placeholder="3-20 位字母/数字/下划线" data-i18n-ph="auth.usernamePh" />
+          <span class="form-hint" data-i18n="auth.usernameHint">用于你的个人主页地址：/u/你的用户名</span>
         </div>
         <div class="field">
-          <label class="field-label" for="reg-password">密码</label>
-          <input class="input" id="reg-password" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="至少 8 位" />
+          <label class="field-label" for="reg-password" data-i18n="auth.passwordReg">密码</label>
+          <input class="input" id="reg-password" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="至少 8 位" data-i18n-ph="auth.passwordRegPh" />
         </div>
 
         <div class="field hidden" id="code-field">
-          <label class="field-label" for="reg-code">邮箱验证码</label>
-          <input class="input" id="reg-code" name="code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" />
-          <span class="form-hint">已发送到你的邮箱，10 分钟内有效。</span>
+          <label class="field-label" for="reg-code" data-i18n="auth.codeField">邮箱验证码</label>
+          <input class="input" id="reg-code" name="code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" data-i18n-ph="auth.codePh" />
+          <span class="form-hint" data-i18n="auth.codeHint">已发送到你的邮箱，10 分钟内有效。</span>
         </div>
 
         <p class="form-error" data-msg></p>
         <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-primary" type="submit" id="reg-send">发送验证码</button>
-          <button class="btn btn-ghost hidden" type="button" id="reg-resend">重新发送</button>
+          <button class="btn btn-primary" type="submit" id="reg-send" data-i18n="auth.sendBtn">发送验证码</button>
+          <button class="btn btn-ghost hidden" type="button" id="reg-resend" data-i18n="auth.resend">重新发送</button>
           <span class="form-hint" id="reg-countdown"></span>
         </div>
       </form>
 
-      <p class="small muted mt-2">已有账号？<a href={`/login?next=${encodeURIComponent(next)}`} style="color:var(--gold)">去登录</a></p>
+      <p class="small muted mt-2"><span data-i18n="auth.hasAccount">已有账号？</span><a href={`/login?next=${encodeURIComponent(next)}`} style="color:var(--gold)" data-i18n="auth.toLogin">去登录</a></p>
     </div>
   </section>
 </Layout>

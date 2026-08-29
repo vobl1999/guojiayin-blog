@@ -5,7 +5,7 @@
 export const SITE = {
   name: 'Guo Jiayin',
   nameZh: '郭嘉胤',
-  title: 'Guo Jiayin — Journal', // 站点头部标题
+  title: 'Guo Jiayin', // 站点标题（不含多余标签）
   url: 'https://blog.vobl.cn',
   description: '郭嘉胤的博客：摄影、观看与生活的随笔。',
   // 回到个人主页（作品集 www.vobl.cn）的按钮

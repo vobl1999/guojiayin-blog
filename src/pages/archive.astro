@@ -20,7 +20,7 @@ for (const p of posts) {
   <section class="container-narrow section">
     <div data-reveal>
       <p class="label">ARCHIVE</p>
-      <h1 class="display-1" style="margin-block: 0.8rem 1.6rem">归档</h1>
+      <h1 class="display-1" style="margin-block: 0.8rem 1.6rem" data-i18n="archive.title">归档</h1>
     </div>
     {
       [...byYear.entries()].map(([year, list]) => (
@@ -39,6 +39,6 @@ for (const p of posts) {
         </div>
       ))
     }
-    {posts.length === 0 && <p class="muted">还没有文章。</p>}
+    {posts.length === 0 && <p class="muted" data-i18n="archive.empty">还没有文章。</p>}
   </section>
 </Layout>

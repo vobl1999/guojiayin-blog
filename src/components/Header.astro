@@ -5,9 +5,9 @@ const user = Astro.locals.user;
 const path = Astro.url.pathname;
 
 const nav = [
-  { label: '首页', href: '/' },
-  { label: '标签', href: '/tags' },
-  { label: '归档', href: '/archive' },
+  { label: '首页', i18n: 'nav.home', href: '/' },
+  { label: '标签', i18n: 'nav.tags', href: '/tags' },
+  { label: '归档', i18n: 'nav.archive', href: '/archive' },
 ];
 
 const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
@@ -16,15 +16,14 @@ const avatarHref = user?.avatarKey ? `/media/${user.avatarKey}` : null;
 
 <div class="site-header">
   <div class="header-bar glass-strong">
-    <a class="wordmark" href="/" aria-label="首页">
-      {SITE.title.replace(' — Journal', '')}<span class="wordmark-dot">.</span>
-      <span style="font-family: var(--sans); font-size: 0.72rem; color: var(--ink-3); margin-left: 0.3rem">JOURNAL</span>
+    <a class="wordmark" href="/" aria-label="Home">
+      {SITE.name}<span class="wordmark-dot">.</span>
     </a>
 
-    <nav class="nav" aria-label="主导航">
+    <nav class="nav" aria-label="Primary">
       {
         nav.map((item) => (
-          <a class:list={['nav-link', { 'is-active': isActive(item.href) }]} href={item.href}>
+          <a class:list={['nav-link', { 'is-active': isActive(item.href) }]} href={item.href} data-i18n={item.i18n}>
             {item.label}
           </a>
         ))
@@ -34,9 +33,10 @@ const avatarHref = user?.avatarKey ? `/media/${user.avatarKey}` : null;
           <path d="M15 3h6v6"></path><path d="M10 14 21 3"></path>
           <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
         </svg>
-        {SITE.portfolioLabel}
+        <span data-i18n="nav.portfolio">{SITE.portfolioLabel}</span>
       </a>
-      <button class="theme-toggle" data-theme-toggle aria-label="切换深浅色">
+      <button class="lang-toggle" data-lang-toggle aria-label="Switch language">EN</button>
+      <button class="theme-toggle" data-theme-toggle aria-label="Toggle dark mode">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
         </svg>
@@ -53,14 +53,14 @@ const avatarHref = user?.avatarKey ? `/media/${user.avatarKey}` : null;
                 {avatarHref ? (
                   <img class="avatar-mini" src={avatarHref} alt="" width="30" height="30" />
                 ) : (
-                  <span class="nav-link">{user.name || user.username}</span>
+                  <span>{user.name || user.username}</span>
                 )}
               </a>
             </>
           ) : (
             <>
-              <a class="nav-link" href="/login">登录</a>
-              <a class="btn btn-primary btn-sm" href="/register">注册</a>
+              <a class="nav-link" href="/login" data-i18n="nav.login">登录</a>
+              <a class="btn btn-primary btn-sm" href="/register" data-i18n="nav.register">注册</a>
             </>
           )
         }

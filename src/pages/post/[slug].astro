@@ -39,7 +39,10 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
 <Layout title={post.title} description={post.excerpt} noindex={post.status !== 'published'}>
   <article class="container-narrow section" style="padding-bottom: 1rem">
     <header data-reveal>
-      <p class="label">{fmtDateTime(post.published_at)}{post.status === 'draft' ? ' · 草稿' : ''}</p>
+      <p class="label">
+        {fmtDateTime(post.published_at)}
+        {post.status === 'draft' && <> · <span data-i18n="post.draft">草稿</span></>}
+      </p>
       <h1 class="display-1" style="margin-block: 0.9rem 1rem">{post.title}</h1>
       <div class="post-meta" style="margin-bottom: 1.6rem">
         {
@@ -50,8 +53,8 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
             </a>
           )
         }
-        <span>{readMinutes(post.content_md)} 分钟阅读</span>
-        <span>{post.views} 次阅读</span>
+        <span>{readMinutes(post.content_md)} <span data-i18n="post.read">分钟阅读</span></span>
+        <span>{post.views} <span data-i18n="post.views">次阅读</span></span>
         {
           post.tags.map((t) => <a class="tag" href={`/tag/${encodeURIComponent(t)}`}>{t}</a>)
         }
@@ -63,29 +66,29 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
 
   <!-- 评论 -->
   <section class="container-narrow" style="padding-bottom: 3rem" data-reveal>
-    <h2 class="display-2" style="margin-bottom: 1.2rem">评论（{comments.filter((c) => c.status === 'visible').length}）</h2>
+    <h2 class="display-2" style="margin-bottom: 1.2rem"><span data-i18n="post.comments">评论</span>（{comments.filter((c) => c.status === 'visible').length}）</h2>
 
     {
       user ? (
         <form id="comment-form" class="glass glass-card" data-post={post.id} style="margin-bottom: 1.6rem">
           <div class="field" style="margin-bottom: 0.8rem">
             <label class="field-label" for="comment-text">
-              发表评论（以 {user.name || user.username} 的身份）
+              以 {user.name || user.username} <span data-i18n="post.as">的身份</span>
             </label>
-            <textarea class="textarea" id="comment-text" name="content" rows="4" placeholder="说点什么…" required></textarea>
+            <textarea class="textarea" id="comment-text" name="content" rows="4" placeholder="说点什么…" data-i18n-ph="post.placeholder" required></textarea>
           </div>
           <p class="form-error" data-comment-msg></p>
           <div style="display:flex;gap:0.8rem;align-items:center">
-            <button class="btn btn-primary" type="submit">发表评论</button>
-            <span class="form-hint">支持 Markdown 的纯文本评论</span>
+            <button class="btn btn-primary" type="submit" data-i18n="post.submit">发表评论</button>
+            <span class="form-hint" data-i18n="post.hint">支持 Markdown 的纯文本评论</span>
           </div>
         </form>
       ) : (
         <div class="glass glass-card" style="margin-bottom: 1.6rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap">
-          <p class="muted">登录后即可评论。</p>
+          <p class="muted" data-i18n="post.loginToComment">登录后即可评论。</p>
           <div style="display:flex;gap:0.7rem">
-            <a class="btn btn-ghost btn-sm" href={`/login?next=${loginNext}`}>登录</a>
-            <a class="btn btn-primary btn-sm" href="/register">注册</a>
+            <a class="btn btn-ghost btn-sm" href={`/login?next=${loginNext}`} data-i18n="nav.login">登录</a>
+            <a class="btn btn-primary btn-sm" href="/register" data-i18n="nav.register">注册</a>
           </div>
         </div>
       )
@@ -94,7 +97,7 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
     <div data-comments>
       {
         top.length === 0 ? (
-          <p class="muted text-center" style="padding: 2rem 0">还没有评论，来抢沙发。</p>
+          <p class="muted text-center" style="padding: 2rem 0" data-i18n="post.none">还没有评论，来抢沙发。</p>
         ) : (
           top.map((c) => (
             <div class="comment" data-comment-id={c.id}>
@@ -112,8 +115,8 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
                 </div>
                 <p class="comment-content">{c.content}</p>
                 <div class="comment-actions">
-                  {user && <button data-reply-to={c.id} data-reply-name={c.user_name || c.user_username}>回复</button>}
-                  {editable(c) && <button data-del-comment={c.id}>删除</button>}
+                  {user && <button data-reply-to={c.id} data-reply-name={c.user_name || c.user_username} data-i18n="post.reply">回复</button>}
+                  {editable(c) && <button data-del-comment={c.id} data-i18n="post.delete">删除</button>}
                 </div>
                 {
                   repliesOf(c.id).map((r) => (
@@ -132,7 +135,7 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
                         </div>
                         <p class="comment-content">{r.content}</p>
                         <div class="comment-actions">
-                          {editable(r) && <button data-del-comment={r.id}>删除</button>}
+                          {editable(r) && <button data-del-comment={r.id} data-i18n="post.delete">删除</button>}
                         </div>
                       </div>
                     </div>

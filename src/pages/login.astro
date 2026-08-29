@@ -10,40 +10,40 @@ const next = Astro.url.searchParams.get('next') || '/';
 <Layout title="登录" noindex>
   <section class="container">
     <div class="glass auth-panel" data-reveal>
-      <h1 class="auth-title">登录</h1>
-      <p class="muted small" style="margin-bottom: 1.6rem">密码登录，或发送邮箱验证码登录。</p>
+      <h1 class="auth-title" data-i18n="auth.loginTitle">登录</h1>
+      <p class="muted small" style="margin-bottom: 1.6rem" data-i18n="auth.loginSub">密码登录，或发送邮箱验证码登录。</p>
 
       <div class="field">
-        <label class="field-label" for="li-email">邮箱</label>
+        <label class="field-label" for="li-email" data-i18n="auth.email">邮箱</label>
         <input class="input" id="li-email" type="email" autocomplete="email" required placeholder="you@example.com" />
       </div>
 
       <div id="pw-mode">
         <div class="field">
-          <label class="field-label" for="li-password">密码</label>
-          <input class="input" id="li-password" type="password" autocomplete="current-password" placeholder="你的密码" />
+          <label class="field-label" for="li-password" data-i18n="auth.password">密码</label>
+          <input class="input" id="li-password" type="password" autocomplete="current-password" placeholder="你的密码" data-i18n-ph="auth.passwordPh" />
         </div>
         <p class="form-error" data-msg></p>
         <div style="display:flex;gap:0.8rem;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-primary" id="li-pw-btn" type="button">登录</button>
-          <button class="btn btn-ghost" id="li-code-switch" type="button">用验证码登录</button>
+          <button class="btn btn-primary" id="li-pw-btn" type="button" data-i18n="auth.loginBtn">登录</button>
+          <button class="btn btn-ghost" id="li-code-switch" type="button" data-i18n="auth.codeLogin">用验证码登录</button>
         </div>
       </div>
 
       <div id="code-mode" class="hidden">
         <div class="field">
-          <label class="field-label" for="li-code">邮箱验证码</label>
-          <input class="input" id="li-code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" />
+          <label class="field-label" for="li-code" data-i18n="auth.code">邮箱验证码</label>
+          <input class="input" id="li-code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" data-i18n-ph="auth.codePh" />
         </div>
         <p class="form-error" data-msg2></p>
         <div style="display:flex;gap:0.8rem;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-primary" id="li-code-btn" type="button">验证并登录</button>
-          <button class="btn btn-ghost" id="li-send-btn" type="button">发送验证码</button>
-          <button class="btn btn-ghost" id="li-pw-switch" type="button">用密码登录</button>
+          <button class="btn btn-primary" id="li-code-btn" type="button" data-i18n="auth.verifyLogin">验证并登录</button>
+          <button class="btn btn-ghost" id="li-send-btn" type="button" data-i18n="auth.sendCode">发送验证码</button>
+          <button class="btn btn-ghost" id="li-pw-switch" type="button" data-i18n="auth.pwLogin">用密码登录</button>
         </div>
       </div>
 
-      <p class="small muted mt-2">还没有账号？<a href={`/register?next=${encodeURIComponent(next)}`} style="color:var(--gold)">去注册</a></p>
+      <p class="small muted mt-2"><span data-i18n="auth.noAccount">还没有账号？</span><a href={`/register?next=${encodeURIComponent(next)}`} style="color:var(--gold)" data-i18n="auth.toRegister">去注册</a></p>
     </div>
   </section>
 </Layout>

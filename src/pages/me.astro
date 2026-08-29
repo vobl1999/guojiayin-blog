@@ -35,7 +35,7 @@ const genderText = user.gender === 'male' ? '男' : user.gender === 'female' ? '
           <span class="small muted">{commentCount} 条评论</span>
         </div>
         {user.role === 'admin' && (
-          <div class="mt-1"><a class="btn btn-primary btn-sm" href="/admin">进入管理后台</a></div>
+          <div class="mt-1"><a class="btn btn-primary btn-sm" href="/admin" data-i18n="me.enterAdmin">进入管理后台</a></div>
         )}
       </div>
     </div>
@@ -44,59 +44,59 @@ const genderText = user.gender === 'male' ? '男' : user.gender === 'female' ? '
   <section class="container section" style="padding-top: 2rem">
     <div class="admin-wrap">
       <div class="glass glass-card" data-reveal>
-        <h2 class="display-2" style="margin-bottom: 1.4rem; font-size: 1.4rem">账号设置</h2>
+        <h2 class="display-2" style="margin-bottom: 1.4rem; font-size: 1.4rem" data-i18n="me.profile">账号设置</h2>
 
         <form id="profile-form" style="margin-bottom: 2rem">
           <div class="field">
-            <label class="field-label">邮箱（登录账号）</label>
+            <label class="field-label" data-i18n="me.email">邮箱（登录账号）</label>
             <input class="input" value={user.email} disabled />
           </div>
           <div class="field">
-            <label class="field-label" for="pf-name">昵称</label>
+            <label class="field-label" for="pf-name" data-i18n="me.name">昵称</label>
             <input class="input" id="pf-name" name="name" maxlength="30" value={user.name} />
           </div>
           <div class="field">
-            <label class="field-label" for="pf-gender">性别</label>
+            <label class="field-label" for="pf-gender" data-i18n="me.gender">性别</label>
             <select class="select" id="pf-gender" name="gender">
-              <option value="" selected={!user.gender}>不公开</option>
-              <option value="male" selected={user.gender === 'male'}>男</option>
-              <option value="female" selected={user.gender === 'female'}>女</option>
-              <option value="other" selected={user.gender === 'other'}>其他</option>
+              <option value="" selected={!user.gender} data-i18n="me.genderPrivate">不公开</option>
+              <option value="male" selected={user.gender === 'male'} data-i18n="me.genderMale">男</option>
+              <option value="female" selected={user.gender === 'female'} data-i18n="me.genderFemale">女</option>
+              <option value="other" selected={user.gender === 'other'} data-i18n="me.genderOther">其他</option>
             </select>
           </div>
           <div class="field">
-            <label class="field-label" for="pf-bio">简介</label>
-            <textarea class="textarea" id="pf-bio" name="bio" rows="3" maxlength="200" placeholder="一句话介绍自己">{user.bio}</textarea>
+            <label class="field-label" for="pf-bio" data-i18n="me.bio">简介</label>
+            <textarea class="textarea" id="pf-bio" name="bio" rows="3" maxlength="200" placeholder="一句话介绍自己" data-i18n-ph="me.bioPh">{user.bio}</textarea>
           </div>
           <p class="form-ok" data-pf-ok></p>
-          <button class="btn btn-primary" type="submit">保存资料</button>
+          <button class="btn btn-primary" type="submit" data-i18n="me.save">保存资料</button>
         </form>
 
         <form id="avatar-form" style="margin-bottom: 2rem">
           <div class="field">
-            <label class="field-label" for="pf-avatar">更换头像</label>
+            <label class="field-label" for="pf-avatar" data-i18n="me.avatar">更换头像</label>
             <input class="input" id="pf-avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" />
-            <span class="form-hint">JPG/PNG/WebP，≤ 2MB，建议正方形。</span>
+            <span class="form-hint" data-i18n="me.avatarHint">JPG/PNG/WebP，≤ 2MB，建议正方形。</span>
           </div>
-          <button class="btn btn-ghost" type="submit">上传头像</button>
+          <button class="btn btn-ghost" type="submit" data-i18n="me.upload">上传头像</button>
         </form>
 
         <form id="pw-form">
           <div class="field">
-            <label class="field-label" for="pw-old">当前密码</label>
+            <label class="field-label" for="pw-old" data-i18n="me.oldPw">当前密码</label>
             <input class="input" id="pw-old" type="password" autocomplete="current-password" />
           </div>
           <div class="field">
-            <label class="field-label" for="pw-new">新密码</label>
+            <label class="field-label" for="pw-new" data-i18n="me.newPw">新密码</label>
             <input class="input" id="pw-new" type="password" autocomplete="new-password" minlength="8" />
           </div>
           <p class="form-ok" data-pw-ok></p>
-          <button class="btn btn-ghost" type="submit">修改密码</button>
+          <button class="btn btn-ghost" type="submit" data-i18n="me.changePw">修改密码</button>
         </form>
       </div>
 
       <div data-reveal>
-        <h2 class="display-2" style="margin-bottom: 1.2rem; font-size: 1.4rem">我的文章</h2>
+        <h2 class="display-2" style="margin-bottom: 1.2rem; font-size: 1.4rem" data-i18n="me.posts">我的文章</h2>
         <div class="post-list">
           {
             posts.length === 0 ? (
