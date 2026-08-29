@@ -6,7 +6,7 @@ pages_build_output_dir = "./dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "blogb-db"
-database_id = "PLACEHOLDER_D1_ID"
+database_id = "af72fe6a-abfd-4351-9c55-d890be6aaa00"
 
 # 对象存储：头像/封面图（同域 /media/ 通道读取，不需要公开 r2.dev 域名）
 [[r2_buckets]]

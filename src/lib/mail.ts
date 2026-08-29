@@ -4,7 +4,6 @@
  * - 生产（Cloudflare Workers）：用 cloudflare:sockets 直连 SMTP（465 隐式 TLS / 587 STARTTLS）
  * - 本地开发：无 socket 环境，把验证码打印到控制台（开发模式），接口返回成功便于联调
  */
-import { connect } from 'cloudflare:sockets';
 import type { DBEnv } from './db';
 
 export interface MailConfig {
@@ -47,6 +46,11 @@ export async function sendVerifyCode(
     `如果不是你本人操作，请忽略这封邮件。\n— blog.vobl.cn`;
 
   if (!cfg) {
+    if (import.meta.env?.DEV) {
+      // 本地开发：没有 SMTP 配置也照常联调，验证码打印在控制台
+      console.log(`[dev-mail] to=${to} code=${code}`);
+      return { ok: true, dev: true };
+    }
     return { ok: false, error: 'SMTP 未配置' };
   }
 
@@ -66,6 +70,8 @@ export async function sendVerifyCode(
 
 /** 最小 SMTP 客户端（Workers TCP socket + TLS） */
 async function smtpSend(cfg: MailConfig, to: string, subject: string, text: string): Promise<boolean> {
+  // 动态导入：只有生产环境会走到这里；Vite dev 不解析 cloudflare:sockets
+  const { connect } = await import(/* @vite-ignore */ 'cloudflare:sockets');
   const useStartTls = cfg.port === 587;
   const socket = connect(
     { hostname: cfg.host, port: cfg.port },

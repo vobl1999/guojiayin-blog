@@ -13,6 +13,8 @@ const BRANCH = 'main';
 const MSG = process.argv[2] || 'update: blogb';
 
 const IGNORE = new Set(['.git', 'node_modules', 'dist', '.astro', '.wrangler', '.npm-cache']);
+const IGNORE_FILES = new Set(['.dev.vars']);
+const IGNORE_PREFIX = ['seed/'];
 const MAX_BLOB = 45 * 1024 * 1024; // GitHub blob API 上限 100MB，保守 45MB
 
 const cred = execSync('git credential fill', {
@@ -42,6 +44,7 @@ function walk(dir, out = []) {
     if (IGNORE.has(name)) continue;
     const full = join(dir, name);
     const rel = relative('.', full).replace(/\\/g, '/');
+    if (IGNORE_FILES.has(rel) || IGNORE_PREFIX.some((p) => rel.startsWith(p))) continue;
     const st = statSync(full);
     if (st.isDirectory()) walk(full, out);
     else {
