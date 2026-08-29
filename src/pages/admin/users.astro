@@ -1,0 +1,108 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { fmtDateTime, avatarUrl } from '../../lib/format';
+
+if (!Astro.locals.user || Astro.locals.user.role !== 'admin') {
+  return Astro.redirect('/login?next=/admin/users');
+}
+const e = env(Astro.locals.runtime);
+
+const { results } = await e.DB.prepare(
+  `SELECT u.*, (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS post_count,
+          (SELECT COUNT(*) FROM comments c WHERE c.user_id = u.id) AS comment_count
+   FROM users u ORDER BY u.created_at DESC LIMIT 200`
+).all();
+const users = results as unknown as {
+  id: string; email: string; username: string; name: string; gender: string | null;
+  avatar_key: string | null; role: string; created_at: number; post_count: number; comment_count: number;
+}[];
+---
+
+<Layout title="用户管理" noindex>
+  <section class="container section">
+    <div class="admin-wrap">
+      <nav class="admin-nav glass glass-card" aria-label="后台导航">
+        <a href="/admin">概览</a>
+        <a href="/admin/posts">文章管理</a>
+        <a href="/admin/post/new">写新文章</a>
+        <a href="/admin/comments">评论管理</a>
+        <a class="is-active" href="/admin/users">用户管理</a>
+        <a href="/me">个人中心</a>
+      </nav>
+
+      <div>
+        <h1 class="display-1" style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin-bottom: 1.4rem">用户管理</h1>
+        <div class="glass glass-card" style="padding:0.6rem 1rem;overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr><th>用户</th><th>邮箱</th><th>角色</th><th>文章/评论</th><th>注册时间</th><th></th></tr>
+            </thead>
+            <tbody>
+              {
+                users.map((u) => (
+                  <tr>
+                    <td>
+                      <span style="display:inline-flex;align-items:center;gap:0.5rem">
+                        {u.avatar_key ? (
+                          <img class="avatar-mini" src={avatarUrl(u.avatar_key) ?? ''} alt="" width="26" height="26" />
+                        ) : (
+                          <span class="avatar-mini" style="display:inline-grid;place-items:center;background:var(--paper-deep)"></span>
+                        )}
+                        <a href={`/u/${u.username}`}>{u.name || u.username}</a>
+                      </span>
+                    </td>
+                    <td class="small muted">{u.email}</td>
+                    <td>
+                      {
+                        u.role === 'admin' ? <span class="gender-badge" style="color:var(--gold);border-color:var(--gold)">管理员</span>
+                        : u.role === 'banned' ? <span class="badge-draft">已封禁</span>
+                        : <span class="gender-badge">用户</span>
+                      }
+                    </td>
+                    <td class="small muted">{u.post_count} / {u.comment_count}</td>
+                    <td class="small muted">{fmtDateTime(u.created_at)}</td>
+                    <td>
+                      <div class="row-actions">
+                        {u.role !== 'admin' && (
+                          u.role === 'banned' ? (
+                            <button class="btn btn-ghost btn-sm" data-user={u.id} data-action="unban">解封</button>
+                          ) : (
+                            <button class="btn btn-ghost btn-sm" data-user={u.id} data-action="ban">封禁</button>
+                          )
+                        )}
+                        {u.id !== Astro.locals.user!.id && (
+                          <button class="btn btn-danger btn-sm" data-user={u.id} data-action="delete">删除</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-user]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const action = btn.dataset.action;
+      const label = action === 'ban' ? '封禁' : action === 'unban' ? '解封' : '删除';
+      if (!confirm(`确定${label}这个用户？`)) return;
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: btn.dataset.user, action }),
+      });
+      if (res.ok) location.reload();
+      else {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(data.error || '操作失败');
+      }
+    });
+  });
+</script>

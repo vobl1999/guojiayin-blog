@@ -1,0 +1,87 @@
+---
+import Layout from '../components/Layout.astro';
+import { SITE } from '../config/site';
+import { env } from '../lib/db';
+import { listPublishedPosts } from '../lib/posts';
+import { fmtDate, readMinutes, avatarUrl } from '../lib/format';
+
+const e = env(Astro.locals.runtime);
+const page = Math.max(1, Number(Astro.url.searchParams.get('page') ?? 1) || 1);
+const { posts, total, pages } = await listPublishedPosts(e, page, SITE.pageSize);
+---
+
+<Layout title={SITE.title}>
+  <section class="container section" style="padding-bottom: 1rem">
+    <div data-reveal>
+      <p class="label">JOURNAL · 日志</p>
+      <h1 class="display-1" style="margin-block: 1rem 0.6rem">你好，这里是我的博客。</h1>
+      <p class="muted" style="max-width: 36rem; font-family: var(--serif); font-size: 1.05rem">
+        摄影、观看与生活的随笔。共 {total} 篇。
+      </p>
+    </div>
+  </section>
+
+  <section class="container" style="padding-bottom: 2rem">
+    {
+      posts.length === 0 ? (
+        <div class="glass glass-card text-center" style="padding: 4rem 1rem">
+          <p class="muted">还没有文章。{total === 0 ? '站长正在写第一篇。' : ''}</p>
+        </div>
+      ) : (
+        <div class="post-list">
+          {
+            posts.map((post, i) => (
+              <article class="glass glass-card post-card card-hover" data-reveal style={`transition-delay:${(i % 6) * 40}ms`}>
+                {
+                  post.cover_key && (
+                    <img class="post-card-cover" src={`/media/${post.cover_key}`} alt="" loading="lazy" decoding="async" />
+                  )
+                }
+                <div class="post-card-main">
+                  <h2 class="post-title"><a href={`/post/${post.slug}`}>{post.title}</a></h2>
+                  <p class="post-meta">
+                    <span>{fmtDate(post.published_at)}</span>
+                    <span>{readMinutes(post.content_md)} 分钟阅读</span>
+                    <span>{post.comment_count ?? 0} 条评论</span>
+                    {
+                      post.author_avatar && (
+                        <span style="display:inline-flex;align-items:center;gap:0.35rem">
+                          <img class="avatar-mini" src={avatarUrl(post.author_avatar) ?? ''} alt="" width="20" height="20" />
+                          {post.author_name || post.author_username}
+                        </span>
+                      )
+                    }
+                  </p>
+                  {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+                  {
+                    post.tags.length > 0 && (
+                      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.2rem">
+                        {post.tags.map((t) => <a class="tag" href={`/tag/${encodeURIComponent(t)}`}>{t}</a>)}
+                      </div>
+                    )
+                  }
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      )
+    }
+
+    {
+      pages > 1 && (
+        <nav class="pagination" aria-label="分页">
+          {
+            Array.from({ length: pages }, (_, i) => i + 1).map((n) => (
+              n === page ? (
+                <span class="is-current">{n}</span>
+              ) : (
+                <a href={n === 1 ? '/' : `/?page=${n}`}>{n}</a>
+              )
+            ))
+          }
+        </nav>
+      )
+    }
+  </section>
+</Layout>

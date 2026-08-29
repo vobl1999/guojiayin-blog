@@ -1,0 +1,39 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { listPostsByTag } from '../../lib/posts';
+import { fmtDate, readMinutes } from '../../lib/format';
+
+const tag = Astro.params.tag!;
+const e = env(Astro.locals.runtime);
+const posts = await listPostsByTag(e, tag);
+---
+
+<Layout title={`标签：${tag}`}>
+  <section class="container-narrow section">
+    <div data-reveal>
+      <p class="label">TAG</p>
+      <h1 class="display-1" style="margin-block: 0.8rem 1.6rem">#{tag}</h1>
+    </div>
+    <div class="post-list">
+      {
+        posts.length === 0 ? (
+          <p class="muted">这个标签下还没有文章。</p>
+        ) : (
+          posts.map((post) => (
+            <article class="glass glass-card post-card card-hover" data-reveal>
+              <div class="post-card-main">
+                <h2 class="post-title"><a href={`/post/${post.slug}`}>{post.title}</a></h2>
+                <p class="post-meta">
+                  <span>{fmtDate(post.published_at)}</span>
+                  <span>{readMinutes(post.content_md)} 分钟阅读</span>
+                </p>
+                {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+              </div>
+            </article>
+          ))
+        )
+      }
+    </div>
+  </section>
+</Layout>

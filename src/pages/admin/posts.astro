@@ -1,0 +1,82 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { listAllPosts } from '../../lib/posts';
+import { fmtDateTime, readMinutes } from '../../lib/format';
+
+if (!Astro.locals.user || Astro.locals.user.role !== 'admin') {
+  return Astro.redirect('/login?next=/admin/posts');
+}
+const e = env(Astro.locals.runtime);
+const posts = await listAllPosts(e);
+---
+
+<Layout title="文章管理" noindex>
+  <section class="container section">
+    <div class="admin-wrap">
+      <nav class="admin-nav glass glass-card" aria-label="后台导航">
+        <a href="/admin">概览</a>
+        <a class="is-active" href="/admin/posts">文章管理</a>
+        <a href="/admin/post/new">写新文章</a>
+        <a href="/admin/comments">评论管理</a>
+        <a href="/admin/users">用户管理</a>
+        <a href="/me">个人中心</a>
+      </nav>
+
+      <div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.4rem">
+          <h1 class="display-1" style="font-size: clamp(1.6rem, 3vw, 2.2rem)">文章管理</h1>
+          <a class="btn btn-primary" href="/admin/post/new">+ 写新文章</a>
+        </div>
+        <div class="glass glass-card" style="padding:0.6rem 1rem;overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr><th>标题</th><th>状态</th><th>标签</th><th>阅读</th><th>评论</th><th>更新时间</th><th></th></tr>
+            </thead>
+            <tbody>
+              {
+                posts.map((p) => (
+                  <tr>
+                    <td><a href={`/admin/post/${p.id}`} style="font-family:var(--serif)">{p.title}</a></td>
+                    <td>
+                      {p.status === 'published' ? (
+                        <a class="tag" style="color:color-mix(in srgb,var(--gold) 85%,#2c7a3a)" href={`/post/${p.slug}`}>已发布</a>
+                      ) : (
+                        <span class="badge-draft">草稿</span>
+                      )}
+                    </td>
+                    <td class="small muted">{p.tags.slice(0, 3).join('、')}</td>
+                    <td class="small muted">{readMinutes(p.content_md)} 分 · {p.views} 阅</td>
+                    <td class="small muted">{p.comment_count ?? 0}</td>
+                    <td class="small muted">{fmtDateTime(p.updated_at)}</td>
+                    <td>
+                      <div class="row-actions">
+                        <a class="btn btn-ghost btn-sm" href={`/admin/post/${p.id}`}>编辑</a>
+                        <button class="btn btn-danger btn-sm" data-del-post={p.id}>删除</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-del-post]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('确定删除这篇文章？此操作不可恢复。')) return;
+      const res = await fetch('/api/admin/posts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: btn.dataset.delPost }),
+      });
+      if (res.ok) location.reload();
+      else alert('删除失败');
+    });
+  });
+</script>

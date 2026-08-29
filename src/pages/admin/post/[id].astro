@@ -1,0 +1,164 @@
+---
+import Layout from '../../../components/Layout.astro';
+import { env } from '../../../lib/db';
+import { getPostById } from '../../../lib/posts';
+import { avatarUrl } from '../../../lib/format';
+
+if (!Astro.locals.user || Astro.locals.user.role !== 'admin') {
+  return Astro.redirect('/login?next=/admin/post/new');
+}
+const e = env(Astro.locals.runtime);
+const id = Astro.params.id ?? 'new';
+const post = id === 'new' ? null : await getPostById(e, id);
+
+if (id !== 'new' && !post) {
+  return Astro.redirect('/admin/posts');
+}
+---
+
+<Layout title={post ? `编辑：${post.title}` : '写新文章'} noindex>
+  <section class="container section">
+    <div class="admin-wrap">
+      <nav class="admin-nav glass glass-card" aria-label="后台导航">
+        <a href="/admin">概览</a>
+        <a href="/admin/posts">文章管理</a>
+        <a class="is-active" href="/admin/post/new">写新文章</a>
+        <a href="/admin/comments">评论管理</a>
+        <a href="/admin/users">用户管理</a>
+        <a href="/me">个人中心</a>
+      </nav>
+
+      <div>
+        <h1 class="display-1" style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin-bottom: 1.4rem">
+          {post ? '编辑文章' : '写新文章'}
+        </h1>
+
+        <form id="post-form" class="glass glass-card" data-id={post?.id ?? ''}>
+          <div class="field">
+            <label class="field-label" for="pf-title">标题</label>
+            <input class="input" id="pf-title" name="title" required maxlength="120" value={post?.title ?? ''} placeholder="文章标题" />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="field">
+            <div class="field" style="margin-bottom:0">
+              <label class="field-label" for="pf-slug">网址别名（slug）</label>
+              <input class="input" id="pf-slug" name="slug" maxlength="80" value={post?.slug ?? ''} placeholder="留空自动生成" />
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label class="field-label" for="pf-status">状态</label>
+              <select class="select" id="pf-status" name="status">
+                <option value="draft" selected={post?.status === 'draft'}>草稿</option>
+                <option value="published" selected={post?.status === 'published'}>发布</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="pf-tags">标签（逗号分隔）</label>
+            <input class="input" id="pf-tags" name="tags" value={post?.tags.join(', ') ?? ''} placeholder="摄影, 随笔" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="pf-cover">封面图（可选，JPG/PNG/WebP ≤ 4MB）</label>
+            <input class="input" id="pf-cover" name="cover" type="file" accept="image/jpeg,image/png,image/webp" />
+            {post?.cover_key && (
+              <span class="form-hint">
+                当前封面：<img src={avatarUrl(post.cover_key) ?? ''} alt="" style="width:8rem;border-radius:0.5rem;display:inline-block;vertical-align:middle;margin-left:0.4rem" />
+              </span>
+            )}
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="pf-md">正文（Markdown）</label>
+            <textarea class="textarea" id="pf-md" name="content" rows="16" style="font-family:ui-monospace,Consolas,monospace;font-size:0.88rem" placeholder={'# 标题\n\n正文支持 Markdown：**加粗**、*斜体*、[链接](https://)、图片、代码块、表格等。'}>{post?.content_md ?? ''}</textarea>
+          </div>
+
+          <p class="form-ok" data-msg></p>
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+            <button class="btn btn-primary" type="submit">{post ? '保存修改' : '创建文章'}</button>
+            <button class="btn btn-ghost" type="button" id="preview-btn">预览</button>
+            {post?.status === 'published' && <a class="btn btn-ghost" href={`/post/${post.slug}`} target="_blank" rel="noopener noreferrer">查看线上</a>}
+          </div>
+        </form>
+
+        <!-- 预览区 -->
+        <div class="glass glass-card hidden mt-3" id="preview-box">
+          <p class="label" style="margin-bottom:0.8rem">预览（服务端渲染）</p>
+          <div class="prose" id="preview-content"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('#post-form')!;
+  const msg = document.querySelector<HTMLElement>('[data-msg]')!;
+  const previewBox = document.querySelector<HTMLElement>('#preview-box')!;
+  const previewContent = document.querySelector<HTMLElement>('#preview-content')!;
+
+  // 标题自动生成 slug（用户没手填时）
+  const titleInput = document.querySelector<HTMLInputElement>('#pf-title')!;
+  const slugInput = document.querySelector<HTMLInputElement>('#pf-slug')!;
+  titleInput.addEventListener('blur', () => {
+    if (!slugInput.value.trim()) {
+      slugInput.value = titleInput.value
+        .toLowerCase()
+        .trim()
+        .replace(/[^\p{L}\p{N}\s-]/gu, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 80);
+    }
+  });
+
+  document.querySelector('#preview-btn')!.addEventListener('click', async () => {
+    const res = await fetch('/api/admin/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ md: document.querySelector<HTMLTextAreaElement>('#pf-md')!.value }),
+    });
+    const data = (await res.json()) as { error?: string; html?: string };
+    previewContent.innerHTML = data.html || '';
+    previewBox.classList.remove('hidden');
+    previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(form);
+    const payload: Record<string, unknown> = {
+      title: fd.get('title'),
+      slug: fd.get('slug') || '',
+      tags: String(fd.get('tags') || '').split(/[,，]/).map((t) => t.trim()).filter(Boolean),
+      status: fd.get('status'),
+      content: fd.get('content'),
+    };
+    if (form.dataset.id) payload.id = form.dataset.id;
+
+    msg.textContent = '';
+    const res = await fetch('/api/admin/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = (await res.json()) as { error?: string; ok?: boolean; id?: string };
+    if (res.ok) {
+      msg.textContent = '已保存 ✓';
+      // 新建的跳转到编辑页（带 id），编辑的留在原地
+      if (!form.dataset.id && data.id) {
+        location.href = `/admin/post/${data.id}`;
+        return;
+      }
+    } else {
+      msg.textContent = data.error || '保存失败';
+    }
+
+    // 上传封面（如果有选择文件）
+    const coverInput = document.querySelector<HTMLInputElement>('#pf-cover')!;
+    if (coverInput.files?.length && (data.id || form.dataset.id)) {
+      const cfd = new FormData();
+      cfd.append('cover', coverInput.files[0]);
+      cfd.append('id', String(data.id || form.dataset.id));
+      const cres = await fetch('/api/admin/posts/cover', { method: 'POST', body: cfd });
+      if (!cres.ok) msg.textContent += '（封面上传失败）';
+    }
+  });
+</script>

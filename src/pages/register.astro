@@ -1,0 +1,118 @@
+---
+import Layout from '../components/Layout.astro';
+
+if (Astro.locals.user) {
+  return Astro.redirect('/me');
+}
+const next = Astro.url.searchParams.get('next') || '/';
+---
+
+<Layout title="注册" noindex>
+  <section class="container">
+    <div class="glass auth-panel" data-reveal>
+      <h1 class="auth-title">注册</h1>
+      <p class="muted small" style="margin-bottom: 1.6rem">用邮箱注册，我们会发送验证码。</p>
+
+      <!-- 第一步：填写信息 + 发送验证码 -->
+      <form id="reg-form" data-next={next}>
+        <div class="field">
+          <label class="field-label" for="reg-email">邮箱</label>
+          <input class="input" id="reg-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="reg-username">用户名</label>
+          <input class="input" id="reg-username" name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]{3,20}" placeholder="3-20 位字母/数字/下划线" />
+          <span class="form-hint">用于你的个人主页地址：/u/你的用户名</span>
+        </div>
+        <div class="field">
+          <label class="field-label" for="reg-password">密码</label>
+          <input class="input" id="reg-password" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="至少 8 位" />
+        </div>
+
+        <div class="field hidden" id="code-field">
+          <label class="field-label" for="reg-code">邮箱验证码</label>
+          <input class="input" id="reg-code" name="code" type="text" inputmode="numeric" maxlength="6" placeholder="6 位数字" />
+          <span class="form-hint">已发送到你的邮箱，10 分钟内有效。</span>
+        </div>
+
+        <p class="form-error" data-msg></p>
+        <div style="display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" type="submit" id="reg-send">发送验证码</button>
+          <button class="btn btn-ghost hidden" type="button" id="reg-resend">重新发送</button>
+          <span class="form-hint" id="reg-countdown"></span>
+        </div>
+      </form>
+
+      <p class="small muted mt-2">已有账号？<a href={`/login?next=${encodeURIComponent(next)}`} style="color:var(--gold)">去登录</a></p>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('#reg-form')!;
+  const msg = document.querySelector<HTMLElement>('[data-msg]')!;
+  const sendBtn = document.querySelector<HTMLButtonElement>('#reg-send')!;
+  const resendBtn = document.querySelector<HTMLButtonElement>('#reg-resend')!;
+  const codeField = document.querySelector<HTMLElement>('#code-field')!;
+  const countdownEl = document.querySelector<HTMLElement>('#reg-countdown')!;
+
+  let step: 'send' | 'verify' = 'send';
+  let countdown = 0;
+  const tick = () => {
+    if (countdown <= 0) {
+      countdownEl.textContent = '';
+      resendBtn.classList.remove('hidden');
+      return;
+    }
+    countdown--;
+    countdownEl.textContent = `${countdown}s 后可重发`;
+    setTimeout(tick, 1000);
+  };
+
+  const post = async (payload: Record<string, unknown>) => {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return { ok: res.ok, data: (await res.json()) as { error?: string; dev?: boolean } };
+  };
+
+  const doSend = async () => {
+    const email = (document.querySelector<HTMLInputElement>('#reg-email')!).value.trim();
+    if (!email) return;
+    msg.textContent = '';
+    sendBtn.disabled = true;
+    const { ok, data } = await post({ step: 'send', email });
+    sendBtn.disabled = false;
+    if (ok) {
+      step = 'verify';
+      codeField.classList.remove('hidden');
+      sendBtn.textContent = '完成注册';
+      resendBtn.classList.add('hidden');
+      countdown = 60;
+      tick();
+      msg.textContent = data.dev ? '（开发模式）验证码已打印在服务端控制台。' : '验证码已发送，请查收邮件。';
+      msg.classList.remove('form-error');
+    } else {
+      msg.textContent = data.error || '发送失败。';
+    }
+  };
+
+  sendBtn.addEventListener('click', async (ev) => {
+    ev.preventDefault();
+    if (step === 'send') await doSend();
+    else {
+      // 完成注册
+      const email = (document.querySelector<HTMLInputElement>('#reg-email')!).value.trim();
+      const username = (document.querySelector<HTMLInputElement>('#reg-username')!).value.trim();
+      const password = (document.querySelector<HTMLInputElement>('#reg-password')!).value;
+      const code = (document.querySelector<HTMLInputElement>('#reg-code')!).value.trim();
+      const { ok, data } = await post({ step: 'verify', email, username, password, code });
+      if (ok) location.href = form.dataset.next || '/me';
+      else msg.textContent = data.error || '注册失败。';
+    }
+  });
+
+  resendBtn.addEventListener('click', () => doSend());
+</script>

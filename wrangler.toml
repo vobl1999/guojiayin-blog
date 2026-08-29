@@ -1,0 +1,21 @@
+name = "blogb"
+compatibility_date = "2025-08-01"
+pages_build_output_dir = "./dist"
+
+# 数据库：博客内容/用户/评论（迁移：npm run db:migrate:remote）
+[[d1_databases]]
+binding = "DB"
+database_name = "blogb-db"
+database_id = "PLACEHOLDER_D1_ID"
+
+# 对象存储：头像/封面图（同域 /media/ 通道读取，不需要公开 r2.dev 域名）
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "blogb-assets"
+
+# 环境变量：生产环境用 wrangler pages secret put 设置（勿提交到仓库）
+#   SESSION_SECRET  会话签名密钥（32+ 随机字符）
+#   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM  Lark 邮箱 SMTP
+# 本地开发：复制 .dev.vars.example 为 .dev.vars 填写
+[vars]
+SITE_URL = "https://blog.vobl.cn"

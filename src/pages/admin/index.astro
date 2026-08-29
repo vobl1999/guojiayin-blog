@@ -1,0 +1,75 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { listAllComments } from '../../lib/posts';
+import { fmtDateTime } from '../../lib/format';
+
+if (!Astro.locals.user || Astro.locals.user.role !== 'admin') {
+  return Astro.redirect('/login?next=/admin');
+}
+const e = env(Astro.locals.runtime);
+
+const counts = await e.DB.prepare(
+  `SELECT
+     (SELECT COUNT(*) FROM posts) AS posts,
+     (SELECT COUNT(*) FROM posts WHERE status = 'draft') AS drafts,
+     (SELECT COUNT(*) FROM comments) AS comments,
+     (SELECT COUNT(*) FROM users) AS users`
+).first<{ posts: number; drafts: number; comments: number; users: number }>();
+const recent = (await listAllComments(e)).slice(0, 8);
+---
+
+<Layout title="管理后台" noindex>
+  <section class="container section">
+    <div class="admin-wrap">
+      <nav class="admin-nav glass glass-card" aria-label="后台导航">
+        <a class="is-active" href="/admin">概览</a>
+        <a href="/admin/posts">文章管理</a>
+        <a href="/admin/post/new">写新文章</a>
+        <a href="/admin/comments">评论管理</a>
+        <a href="/admin/users">用户管理</a>
+        <a href="/me">个人中心</a>
+      </nav>
+
+      <div>
+        <h1 class="display-1" style="margin-bottom: 1.6rem">后台概览</h1>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:1rem;margin-bottom:2.4rem">
+          {
+            [
+              { label: '文章', value: counts?.posts ?? 0 },
+              { label: '草稿', value: counts?.drafts ?? 0 },
+              { label: '评论', value: counts?.comments ?? 0 },
+              { label: '用户', value: counts?.users ?? 0 },
+            ].map((s) => (
+              <div class="glass glass-card text-center">
+                <p class="display-2" style="font-size:2rem">{s.value}</p>
+                <p class="label" style="margin-top:0.3rem">{s.label}</p>
+              </div>
+            ))
+          }
+        </div>
+
+        <h2 class="display-2" style="font-size:1.3rem;margin-bottom:1rem">最新评论</h2>
+        <div class="glass glass-card" style="padding:0.4rem 1.2rem">
+          {
+            recent.length === 0 ? (
+              <p class="muted" style="padding:1rem 0">还没有评论。</p>
+            ) : (
+              recent.map((c) => (
+                <div style="padding:0.7rem 0;border-bottom:1px solid var(--line)">
+                  <p class="small">
+                    <strong>{c.user_name || c.user_username}</strong>
+                    <span class="muted"> 评论了 </span>
+                    <a href={`/post/${c.post_slug}`} style="color:var(--gold)">{c.post_title}</a>
+                    <span class="muted"> · {fmtDateTime(c.created_at)}</span>
+                  </p>
+                  <p class="small muted" style="margin-top:0.2rem">{c.content.slice(0, 80)}</p>
+                </div>
+              ))
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

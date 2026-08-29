@@ -1,0 +1,35 @@
+{
+  "name": "guojiayin-blog",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Guo Jiayin's personal blog — Astro SSR on Cloudflare Pages (D1 + R2).",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "deploy": "wrangler pages deploy dist --project-name=blogb",
+    "db:migrate:local": "wrangler d1 execute blogb-db --local --file=migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute blogb-db --remote --file=migrations/0001_init.sql"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.0.0",
+    "@astrojs/rss": "^4.0.0",
+    "@astrojs/sitemap": "^3.0.0",
+    "@fontsource-variable/fraunces": "^5.0.0",
+    "@fontsource-variable/inter": "^5.0.0",
+    "astro": "^5.0.0",
+    "markdown-it": "^14.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.0",
+    "@cloudflare/workers-types": "^5.20260829.1",
+    "@types/markdown-it": "^14.2.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18.17.1"
+  }
+}

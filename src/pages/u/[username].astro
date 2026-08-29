@@ -1,0 +1,73 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { listPostsByAuthor, countCommentsForUser } from '../../lib/posts';
+import { fmtDate, avatarUrl } from '../../lib/format';
+
+const { username } = Astro.params;
+const e = env(Astro.locals.runtime);
+
+const profile = await e.DB.prepare(
+  'SELECT id, username, name, gender, avatar_key, bio, role, created_at FROM users WHERE username = ?'
+)
+  .bind(username)
+  .first<{ id: string; username: string; name: string; gender: string | null; avatar_key: string | null; bio: string | null; role: string; created_at: number }>();
+
+if (!profile) {
+  return Astro.redirect('/404');
+}
+
+const posts = await listPostsByAuthor(e, profile.id);
+const commentCount = await countCommentsForUser(e, profile.id);
+const genderText = profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : profile.gender === 'other' ? '其他' : '';
+---
+
+<Layout title={`${profile.name || profile.username} 的主页`}>
+  <section class="container section" style="padding-bottom: 1rem">
+    <div class="glass profile-hero" data-reveal>
+      {profile.avatar_key ? (
+        <img class="profile-avatar" src={avatarUrl(profile.avatar_key) ?? ''} alt="" width="120" height="120" />
+      ) : (
+        <div class="profile-avatar"></div>
+      )}
+      <div class="profile-info">
+        <h1 class="profile-name">{profile.name || profile.username}</h1>
+        <div class="profile-meta">
+          {profile.role === 'admin' && <span class="gender-badge" style="color:var(--gold);border-color:var(--gold)">站长</span>}
+          {genderText && <span class="gender-badge">{genderText}</span>}
+          <span class="small muted">@{profile.username}</span>
+          <span class="small muted">加入于 {fmtDate(profile.created_at)}</span>
+        </div>
+        {profile.bio && <p class="muted mt-1" style="max-width: 34rem">{profile.bio}</p>}
+        <div class="profile-meta mt-1">
+          <span class="small muted">{posts.length} 篇文章</span>
+          <span class="small muted">{commentCount} 条评论</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container" style="padding-bottom: 3rem">
+    <h2 class="display-2" style="margin-bottom: 1.2rem; font-size: 1.4rem">TA 的文章</h2>
+    <div class="post-list">
+      {
+        posts.length === 0 ? (
+          <p class="muted">还没有发布文章。</p>
+        ) : (
+          posts.map((post) => (
+            <article class="glass glass-card post-card card-hover" data-reveal>
+              <div class="post-card-main">
+                <h3 class="post-title" style="font-size: 1.15rem"><a href={`/post/${post.slug}`}>{post.title}</a></h3>
+                <p class="post-meta">
+                  <span>{fmtDate(post.published_at)}</span>
+                  <span>{post.comment_count ?? 0} 条评论</span>
+                </p>
+                {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+              </div>
+            </article>
+          ))
+        )
+      }
+    </div>
+  </section>
+</Layout>

@@ -1,0 +1,44 @@
+---
+import Layout from '../components/Layout.astro';
+import { env } from '../lib/db';
+import { listAllPublished } from '../lib/posts';
+import { fmtDate } from '../lib/format';
+
+const e = env(Astro.locals.runtime);
+const posts = await listAllPublished(e);
+
+// 按年分组
+const byYear = new Map<number, typeof posts>();
+for (const p of posts) {
+  const y = new Date(p.published_at ?? p.created_at).getFullYear();
+  if (!byYear.has(y)) byYear.set(y, []);
+  byYear.get(y)!.push(p);
+}
+---
+
+<Layout title="归档">
+  <section class="container-narrow section">
+    <div data-reveal>
+      <p class="label">ARCHIVE</p>
+      <h1 class="display-1" style="margin-block: 0.8rem 1.6rem">归档</h1>
+    </div>
+    {
+      [...byYear.entries()].map(([year, list]) => (
+        <div data-reveal style="margin-bottom: 2rem">
+          <h2 class="display-2" style="margin-bottom: 0.8rem">{year}</h2>
+          <div class="glass glass-card" style="padding: 0.8rem 1.4rem">
+            {
+              list.map((post) => (
+                <div style="display:flex;gap:1rem;align-items:baseline;justify-content:space-between;padding:0.55rem 0;border-bottom:1px solid var(--line)">
+                  <a href={`/post/${post.slug}`} style="font-family:var(--serif)">{post.title}</a>
+                  <span class="small muted" style="white-space:nowrap">{fmtDate(post.published_at)}</span>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      ))
+    }
+    {posts.length === 0 && <p class="muted">还没有文章。</p>}
+  </section>
+</Layout>

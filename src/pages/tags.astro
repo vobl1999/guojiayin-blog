@@ -1,0 +1,30 @@
+---
+import Layout from '../components/Layout.astro';
+import { env } from '../lib/db';
+import { listAllTags } from '../lib/posts';
+
+const e = env(Astro.locals.runtime);
+const tags = await listAllTags(e);
+---
+
+<Layout title="标签">
+  <section class="container-narrow section">
+    <div data-reveal>
+      <p class="label">TAGS</p>
+      <h1 class="display-1" style="margin-block: 0.8rem 1.4rem">标签</h1>
+    </div>
+    {
+      tags.length === 0 ? (
+        <p class="muted">暂无标签。</p>
+      ) : (
+        <div class="glass glass-card" data-reveal style="display:flex;flex-wrap:wrap;gap:0.7rem">
+          {tags.map(({ tag, count }) => (
+            <a class="tag" href={`/tag/${encodeURIComponent(tag)}`} style="font-size:0.8rem;padding:0.4rem 1rem">
+              {tag} <span class="muted" style="font-size:0.7rem">· {count}</span>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </section>
+</Layout>

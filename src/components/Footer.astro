@@ -1,0 +1,26 @@
+---
+import { SITE } from '../config/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <a class="wordmark" href="/">{SITE.name}<span class="wordmark-dot">.</span></a>
+      <p class="footer-note" style="margin-top: 0.6rem">
+        {SITE.nameZh} 的博客 —— 关于摄影、观看与生活。
+      </p>
+    </div>
+    <div class="footer-links">
+      <a href="/">博客首页</a>
+      <a href="/archive">文章归档</a>
+      <a href="/rss.xml">RSS 订阅</a>
+      <a href={SITE.portfolioUrl} target="_blank" rel="noopener noreferrer">作品集 {SITE.portfolioUrl.replace('https://', '')}</a>
+    </div>
+    <div class="footer-note">
+      © {year} {SITE.name}. All photographs and words are the property of the author.<br />
+      Set in Fraunces &amp; Inter. Built with Astro.
+    </div>
+  </div>
+</footer>

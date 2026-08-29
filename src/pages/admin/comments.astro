@@ -1,0 +1,90 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { listAllComments } from '../../lib/posts';
+import { fmtDateTime, avatarUrl } from '../../lib/format';
+
+if (!Astro.locals.user || Astro.locals.user.role !== 'admin') {
+  return Astro.redirect('/login?next=/admin/comments');
+}
+const e = env(Astro.locals.runtime);
+const comments = await listAllComments(e);
+---
+
+<Layout title="评论管理" noindex>
+  <section class="container section">
+    <div class="admin-wrap">
+      <nav class="admin-nav glass glass-card" aria-label="后台导航">
+        <a href="/admin">概览</a>
+        <a href="/admin/posts">文章管理</a>
+        <a href="/admin/post/new">写新文章</a>
+        <a class="is-active" href="/admin/comments">评论管理</a>
+        <a href="/admin/users">用户管理</a>
+        <a href="/me">个人中心</a>
+      </nav>
+
+      <div>
+        <h1 class="display-1" style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin-bottom: 1.4rem">评论管理</h1>
+        <div class="post-list">
+          {
+            comments.length === 0 ? (
+              <p class="muted">还没有评论。</p>
+            ) : (
+              comments.map((c) => (
+                <div class="glass glass-card comment" style="border-top:0" data-comment-row={c.id}>
+                  {c.user_avatar ? (
+                    <img class="comment-avatar" src={avatarUrl(c.user_avatar) ?? ''} alt="" width="38" height="38" />
+                  ) : (
+                    <div class="comment-avatar"></div>
+                  )}
+                  <div class="comment-body">
+                    <div class="comment-head">
+                      <span class="comment-name">{c.user_name || c.user_username}</span>
+                      <span class="comment-time">{fmtDateTime(c.created_at)}</span>
+                      <span class="comment-time">
+                        于 <a href={`/post/${c.post_slug}`} style="color:var(--gold)">{c.post_title}</a>
+                      </span>
+                      {c.status === 'hidden' && <span class="badge-draft">已隐藏</span>}
+                    </div>
+                    <p class="comment-content">{c.content}</p>
+                    <div class="comment-actions">
+                      {c.status === 'visible' ? (
+                        <button data-hide-comment={c.id}>隐藏</button>
+                      ) : (
+                        <button data-show-comment={c.id}>恢复显示</button>
+                      )}
+                      <button data-del-comment={c.id} style="color:var(--danger)">删除</button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  const act = async (id: string, action: string) => {
+    const res = await fetch('/api/admin/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action }),
+    });
+    if (res.ok) location.reload();
+    else alert('操作失败');
+  };
+  document.querySelectorAll<HTMLButtonElement>('[data-hide-comment]').forEach((b) =>
+    b.addEventListener('click', () => act(b.dataset.hideComment!, 'hide'))
+  );
+  document.querySelectorAll<HTMLButtonElement>('[data-show-comment]').forEach((b) =>
+    b.addEventListener('click', () => act(b.dataset.showComment!, 'show'))
+  );
+  document.querySelectorAll<HTMLButtonElement>('[data-del-comment]').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (confirm('确定删除这条评论及其回复？')) act(b.dataset.delComment!, 'delete');
+    })
+  );
+</script>

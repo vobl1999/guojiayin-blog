@@ -1,0 +1,207 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { getPostBySlug, listComments, bumpViews, type Comment } from '../../lib/posts';
+import { fmtDateTime, readMinutes, avatarUrl } from '../../lib/format';
+
+const slug = Astro.params.slug!;
+const e = env(Astro.locals.runtime);
+const post = await getPostBySlug(e, slug);
+
+if (!post) {
+  return Astro.redirect('/404');
+}
+
+// 浏览计数：仅对已发布文章（每次页面渲染 +1，SSR 天然去重一定程度的刷新）
+if (post.status === 'published') {
+  await bumpViews(e, post.id);
+}
+
+const comments = post.status === 'published' ? await listComments(e, post.id) : [];
+const user = Astro.locals.user;
+
+const top = comments.filter((c) => !c.parent_id && c.status === 'visible');
+const repliesOf = (id: string) => comments.filter((c) => c.parent_id === id && c.status === 'visible');
+
+const postJsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  datePublished: post.published_at ? new Date(post.published_at).toISOString() : undefined,
+  dateModified: new Date(post.updated_at).toISOString(),
+  author: { '@type': 'Person', name: post.author_name || post.author_username },
+});
+
+const editable = (c: Comment) => user && (user.role === 'admin' || user.id === c.user_id);
+const loginNext = encodeURIComponent(`/post/${post.slug}`);
+---
+
+<Layout title={post.title} description={post.excerpt} noindex={post.status !== 'published'}>
+  <article class="container-narrow section" style="padding-bottom: 1rem">
+    <header data-reveal>
+      <p class="label">{fmtDateTime(post.published_at)}{post.status === 'draft' ? ' · 草稿' : ''}</p>
+      <h1 class="display-1" style="margin-block: 0.9rem 1rem">{post.title}</h1>
+      <div class="post-meta" style="margin-bottom: 1.6rem">
+        {
+          post.author_avatar && (
+            <a href={`/u/${post.author_username}`} style="display:inline-flex;align-items:center;gap:0.4rem">
+              <img class="avatar-mini" src={avatarUrl(post.author_avatar) ?? ''} alt="" width="22" height="22" />
+              {post.author_name || post.author_username}
+            </a>
+          )
+        }
+        <span>{readMinutes(post.content_md)} 分钟阅读</span>
+        <span>{post.views} 次阅读</span>
+        {
+          post.tags.map((t) => <a class="tag" href={`/tag/${encodeURIComponent(t)}`}>{t}</a>)
+        }
+      </div>
+    </header>
+
+    <div class="prose" data-reveal set:html={post.content_html} />
+  </article>
+
+  <!-- 评论 -->
+  <section class="container-narrow" style="padding-bottom: 3rem" data-reveal>
+    <h2 class="display-2" style="margin-bottom: 1.2rem">评论（{comments.filter((c) => c.status === 'visible').length}）</h2>
+
+    {
+      user ? (
+        <form id="comment-form" class="glass glass-card" data-post={post.id} style="margin-bottom: 1.6rem">
+          <div class="field" style="margin-bottom: 0.8rem">
+            <label class="field-label" for="comment-text">
+              发表评论（以 {user.name || user.username} 的身份）
+            </label>
+            <textarea class="textarea" id="comment-text" name="content" rows="4" placeholder="说点什么…" required></textarea>
+          </div>
+          <p class="form-error" data-comment-msg></p>
+          <div style="display:flex;gap:0.8rem;align-items:center">
+            <button class="btn btn-primary" type="submit">发表评论</button>
+            <span class="form-hint">支持 Markdown 的纯文本评论</span>
+          </div>
+        </form>
+      ) : (
+        <div class="glass glass-card" style="margin-bottom: 1.6rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap">
+          <p class="muted">登录后即可评论。</p>
+          <div style="display:flex;gap:0.7rem">
+            <a class="btn btn-ghost btn-sm" href={`/login?next=${loginNext}`}>登录</a>
+            <a class="btn btn-primary btn-sm" href="/register">注册</a>
+          </div>
+        </div>
+      )
+    }
+
+    <div data-comments>
+      {
+        top.length === 0 ? (
+          <p class="muted text-center" style="padding: 2rem 0">还没有评论，来抢沙发。</p>
+        ) : (
+          top.map((c) => (
+            <div class="comment" data-comment-id={c.id}>
+              <a href={`/u/${c.user_username}`}>
+                {c.user_avatar ? (
+                  <img class="comment-avatar" src={avatarUrl(c.user_avatar) ?? ''} alt="" width="38" height="38" />
+                ) : (
+                  <div class="comment-avatar"></div>
+                )}
+              </a>
+              <div class="comment-body">
+                <div class="comment-head">
+                  <span class="comment-name">{c.user_name || c.user_username}</span>
+                  <span class="comment-time">{fmtDateTime(c.created_at)}</span>
+                </div>
+                <p class="comment-content">{c.content}</p>
+                <div class="comment-actions">
+                  {user && <button data-reply-to={c.id} data-reply-name={c.user_name || c.user_username}>回复</button>}
+                  {editable(c) && <button data-del-comment={c.id}>删除</button>}
+                </div>
+                {
+                  repliesOf(c.id).map((r) => (
+                    <div class="comment comment-reply" data-comment-id={r.id}>
+                      <a href={`/u/${r.user_username}`}>
+                        {r.user_avatar ? (
+                          <img class="comment-avatar" src={avatarUrl(r.user_avatar) ?? ''} alt="" width="32" height="32" />
+                        ) : (
+                          <div class="comment-avatar"></div>
+                        )}
+                      </a>
+                      <div class="comment-body">
+                        <div class="comment-head">
+                          <span class="comment-name">{r.user_name || r.user_username}</span>
+                          <span class="comment-time">{fmtDateTime(r.created_at)}</span>
+                        </div>
+                        <p class="comment-content">{r.content}</p>
+                        <div class="comment-actions">
+                          {editable(r) && <button data-del-comment={r.id}>删除</button>}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          ))
+        )
+      }
+      </div>
+    </div>
+  </section>
+
+  <script type="application/ld+json" set:html={postJsonLd} />
+</Layout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('#comment-form');
+  const textarea = document.querySelector<HTMLTextAreaElement>('#comment-text');
+  const msgEl = document.querySelector<HTMLElement>('[data-comment-msg]');
+  let replyTo: string | null = null;
+  let replyName = '';
+
+  document.querySelectorAll<HTMLButtonElement>('[data-reply-to]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      replyTo = btn.dataset.replyTo ?? null;
+      replyName = btn.dataset.replyName ?? '';
+      textarea?.focus();
+      msgEl!.textContent = replyTo ? `回复 @${replyName}（再次点击“发表评论”发送；取消请清空回复）` : '';
+      textarea!.placeholder = replyTo ? `回复 @${replyName}…` : '说点什么…';
+    });
+  });
+
+  form?.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const content = textarea?.value.trim();
+    if (!content) return;
+    const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: form.dataset.post, content, parentId: replyTo }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (res.ok) {
+        location.reload();
+      } else {
+        msgEl!.textContent = data.error || '发表失败，请稍后再试。';
+      }
+    } catch {
+      msgEl!.textContent = '网络错误，请稍后再试。';
+    }
+    btn.disabled = false;
+  });
+
+  // 删除评论
+  document.querySelectorAll<HTMLButtonElement>('[data-del-comment]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('确定删除这条评论？')) return;
+      const res = await fetch('/api/comments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: btn.dataset.delComment }),
+      });
+      if (res.ok) location.reload();
+      else alert('删除失败，请刷新重试。');
+    });
+  });
+</script>

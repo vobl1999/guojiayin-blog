@@ -1,0 +1,23 @@
+# Cloudflare Pages headers & cache strategy.
+# HTML 短缓存（SSR 页面），静态资源长缓存。
+/*
+  # Security
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-XSS-Protection: 0
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: blob:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; upgrade-insecure-requests
+  # Cache
+  Cache-Control: public, max-age=300, stale-while-revalidate=604800
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+/favicon.svg
+  Cache-Control: public, max-age=86400
+/rss.xml
+  Cache-Control: public, max-age=3600
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
