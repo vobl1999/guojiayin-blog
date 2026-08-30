@@ -4,6 +4,8 @@ import { hashPassword } from '../../../lib/auth';
 import { createSession, SESSION_COOKIE, sweepSessions } from '../../../lib/session';
 import { sendVerifyCode } from '../../../lib/mail';
 import { EMAIL_RE, USERNAME_RE, uid } from '../../../lib/ids';
+import { verifyTurnstile } from '../../../lib/turnstile';
+import { audit, clientMeta } from '../../../lib/audit';
 
 const CODE_TTL = 10 * 60 * 1000; // 10 分钟
 const RESEND_GAP = 60 * 1000; // 60 秒
@@ -15,12 +17,19 @@ function genCode(): string {
 
 export const POST: APIRoute = async ({ request, locals, cookies }) => {
   const e = env(locals.runtime);
+  const meta = clientMeta(request);
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const email = String(body.email ?? '').trim().toLowerCase();
   const step = String(body.step ?? 'send');
 
   if (!EMAIL_RE.test(email)) {
     return new Response(JSON.stringify({ error: '邮箱格式不正确。' }), { status: 400 });
+  }
+
+  // 人机验证（未配置则放行）
+  const cfOk = await verifyTurnstile(e, String(body.cfToken ?? ''), meta.ip);
+  if (!cfOk) {
+    return new Response(JSON.stringify({ error: '人机验证未通过，请重试。' }), { status: 400 });
   }
 
   const existing = await e.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
@@ -112,6 +121,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       maxAge: 30 * 86400,
     });
 
+    audit(e, userId, 'register.success', { email, username }, meta);
     return new Response(JSON.stringify({ ok: true }));
   }
 

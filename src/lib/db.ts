@@ -11,6 +11,9 @@ export interface DBEnv {
   SMTP_PASS?: string;
   SMTP_FROM?: string;
   SITE_URL?: string;
+  AUDIT_KEY?: string;
+  TURNSTILE_SITEKEY?: string;
+  TURNSTILE_SECRET?: string;
 }
 
 export function env(runtime: App.Locals['runtime']): DBEnv {

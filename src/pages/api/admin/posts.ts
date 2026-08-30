@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from '../../../lib/db';
 import { renderMarkdown, makeExcerpt } from '../../../lib/markdown';
 import { slugify, uid } from '../../../lib/ids';
+import { audit, clientMeta } from '../../../lib/audit';
 
 function requireAdmin(locals: App.Locals) {
   const user = locals.user;
@@ -40,6 +41,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     )
       .bind(title, content, html, excerpt, JSON.stringify(tags), status, now, status, now, id)
       .run();
+    audit(e, guard.user.id, 'post.update', { id, status, title: title.slice(0, 60) }, clientMeta(request));
     return new Response(JSON.stringify({ ok: true, id }));
   }
 
@@ -54,6 +56,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   )
     .bind(postId, slug, title, content, html, excerpt, JSON.stringify(tags), status, guard.user.id, now, now, status === 'published' ? now : null)
     .run();
+  audit(e, guard.user.id, 'post.create', { id: postId, slug, status, title: title.slice(0, 60) }, clientMeta(request));
   return new Response(JSON.stringify({ ok: true, id: postId, slug }));
 };
 
@@ -71,5 +74,6 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
   if (post.cover_key) await e.BUCKET.delete(post.cover_key).catch(() => {});
   await e.DB.prepare('DELETE FROM comments WHERE post_id = ?').bind(id).run();
   await e.DB.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
+  audit(e, guard.user.id, 'post.delete', { id }, clientMeta(request));
   return new Response(JSON.stringify({ ok: true }));
 };

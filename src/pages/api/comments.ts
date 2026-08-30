@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from '../../lib/db';
 import { uid } from '../../lib/ids';
+import { audit, clientMeta } from '../../lib/audit';
 
 /** 评论：POST 发表 / DELETE 删除（本人或管理员） */
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -9,6 +10,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (user.role === 'banned') return new Response(JSON.stringify({ error: '账号已被封禁。' }), { status: 403 });
 
   const e = env(locals.runtime);
+  const meta = clientMeta(request);
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const postId = String(body.postId ?? '');
   const parentId = body.parentId ? String(body.parentId) : null;
@@ -38,6 +40,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     .bind(id, postId, user.id, parentId, content, now, now)
     .run();
 
+  audit(e, user.id, 'comment.create', { postId, id }, meta);
   return new Response(JSON.stringify({ ok: true, id }));
 };
 
@@ -56,5 +59,6 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
 
   await e.DB.prepare(`DELETE FROM comments WHERE id = ?`).bind(id).run();
   await e.DB.prepare(`DELETE FROM comments WHERE parent_id = ?`).bind(id).run(); // 连同回复
+  audit(e, user.id, 'comment.delete', { id }, clientMeta(request));
   return new Response(JSON.stringify({ ok: true }));
 };

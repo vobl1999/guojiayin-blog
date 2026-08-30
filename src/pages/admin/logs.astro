@@ -1,0 +1,62 @@
+---
+import Layout from '../../components/Layout.astro';
+import { env } from '../../lib/db';
+import { fmtDateTime } from '../../lib/format';
+
+if (!Astro.locals.user || Astro.locals.user.role !== 'admin') {
+  return Astro.redirect('/login?next=/admin/logs');
+}
+const e = env(Astro.locals.runtime);
+
+const { results } = await e.DB.prepare(
+  'SELECT id, encrypted, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 200'
+).all();
+const logs = results as unknown as { id: string; encrypted: string; created_at: number }[];
+const total = await e.DB.prepare('SELECT COUNT(*) AS n FROM audit_logs').first<{ n: number }>();
+---
+
+<Layout title="操作日志" noindex>
+  <section class="container section">
+    <div class="admin-wrap">
+      <nav class="admin-nav glass glass-card" aria-label="后台导航">
+        <a href="/admin">概览</a>
+        <a href="/admin/posts">文章管理</a>
+        <a href="/admin/post/new">写新文章</a>
+        <a href="/admin/comments">评论管理</a>
+        <a href="/admin/users">用户管理</a>
+        <a class="is-active" href="/admin/logs">操作日志</a>
+        <a href="/me">个人中心</a>
+      </nav>
+
+      <div>
+        <h1 class="display-1" style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin-bottom: 1rem">操作日志</h1>
+        <p class="muted small" style="margin-bottom: 1.4rem">
+          共 {total?.n ?? 0} 条记录（最近 200 条）。全部 AES-256-GCM 加密存储，密文带 .vobl 后缀，仅持有密钥者可解密。
+        </p>
+        <div class="glass glass-card" style="padding:0.6rem 1rem;overflow-x:auto">
+          <table class="table">
+            <thead>
+              <tr><th>时间</th><th>加密记录（iv.cipher.vobl）</th></tr>
+            </thead>
+            <tbody>
+              {
+                logs.length === 0 ? (
+                  <tr><td colspan="2" class="muted" style="padding:1.2rem">暂无日志。</td></tr>
+                ) : (
+                  logs.map((l) => (
+                    <tr>
+                      <td class="small muted" style="white-space:nowrap">{fmtDateTime(l.created_at)}</td>
+                      <td style="font-family:ui-monospace,Consolas,monospace;font-size:0.72rem;word-break:break-all" title={l.id}>
+                        {l.encrypted.slice(0, 140)}{l.encrypted.length > 140 ? '…' : ''}
+                      </td>
+                    </tr>
+                  ))
+                )
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

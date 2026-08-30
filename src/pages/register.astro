@@ -1,10 +1,13 @@
 ---
 import Layout from '../components/Layout.astro';
+import { env } from '../lib/db';
 
 if (Astro.locals.user) {
   return Astro.redirect('/me');
 }
 const next = Astro.url.searchParams.get('next') || '/';
+const e = env(Astro.locals.runtime);
+const sitekey = e.TURNSTILE_SITEKEY || '';
 ---
 
 <Layout title="注册" noindex>
@@ -28,6 +31,13 @@ const next = Astro.url.searchParams.get('next') || '/';
           <label class="field-label" for="reg-password" data-i18n="auth.passwordReg">密码</label>
           <input class="input" id="reg-password" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="至少 8 位" data-i18n-ph="auth.passwordRegPh" />
         </div>
+
+        {sitekey && (
+          <div class="field">
+            <div class="cf-turnstile" data-sitekey={sitekey} data-theme="auto"></div>
+          </div>
+        )}
+        <script is:inline src={sitekey ? 'https://challenges.cloudflare.com/turnstile/v0/api.js' : undefined} async defer></script>
 
         <div class="field hidden" id="code-field">
           <label class="field-label" for="reg-code" data-i18n="auth.codeField">邮箱验证码</label>
@@ -70,17 +80,29 @@ const next = Astro.url.searchParams.get('next') || '/';
   };
 
   const post = async (payload: Record<string, unknown>) => {
+    const cfToken = (window as unknown as { turnstile?: { getResponse: () => string } }).turnstile?.getResponse() ?? '';
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, cfToken }),
     });
     return { ok: res.ok, data: (await res.json()) as { error?: string; dev?: boolean } };
   };
 
   const doSend = async () => {
     const email = (document.querySelector<HTMLInputElement>('#reg-email')!).value.trim();
+    const username = (document.querySelector<HTMLInputElement>('#reg-username')!).value.trim();
+    const password = (document.querySelector<HTMLInputElement>('#reg-password')!).value;
     if (!email) return;
+    // 发送验证码前先校验表单（避免浪费验证码）
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+      msg.textContent = '用户名需为 3-20 位字母、数字或下划线。';
+      return;
+    }
+    if (password.length < 8) {
+      msg.textContent = '密码至少 8 位。';
+      return;
+    }
     msg.textContent = '';
     sendBtn.disabled = true;
     const { ok, data } = await post({ step: 'send', email });
