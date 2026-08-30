@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     .bind(id, postId, user.id, parentId, content, now, now)
     .run();
 
-  audit(e, user.id, 'comment.create', { postId, id }, meta);
+  await audit(e, user.id, 'comment.create', { postId, id }, meta);
   return new Response(JSON.stringify({ ok: true, id }));
 };
 
@@ -59,6 +59,6 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
 
   await e.DB.prepare(`DELETE FROM comments WHERE id = ?`).bind(id).run();
   await e.DB.prepare(`DELETE FROM comments WHERE parent_id = ?`).bind(id).run(); // 连同回复
-  audit(e, user.id, 'comment.delete', { id }, clientMeta(request));
+  await audit(e, user.id, 'comment.delete', { id }, clientMeta(request));
   return new Response(JSON.stringify({ ok: true }));
 };

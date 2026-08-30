@@ -7,7 +7,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
   const e = env(locals.runtime);
   const raw = cookies.get(SESSION_COOKIE)?.value;
   if (raw) await destroySession(e.DB, raw);
-  if (locals.user) audit(e, locals.user.id, 'logout', {}, clientMeta(request));
+  if (locals.user) await audit(e, locals.user.id, 'logout', {}, clientMeta(request));
   cookies.delete(SESSION_COOKIE, { path: '/' });
   return new Response(JSON.stringify({ ok: true }));
 };

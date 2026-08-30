@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       maxAge: 30 * 86400,
     });
 
-    audit(e, userId, 'register.success', { email, username }, meta);
+    await audit(e, userId, 'register.success', { email, username }, meta);
     return new Response(JSON.stringify({ ok: true }));
   }
 

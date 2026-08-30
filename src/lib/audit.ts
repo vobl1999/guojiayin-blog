@@ -32,14 +32,14 @@ export interface AuditMeta {
   ua?: string;
 }
 
-/** 记录一条用户操作（异步不阻塞主流程） */
-export function audit(
+/** 记录一条用户操作（必须 await：Workers 会冻结未完成的 fire-and-forget 异步） */
+export async function audit(
   e: DBEnv,
   userId: string | null,
   action: string,
   detail: Record<string, unknown> = {},
   meta: AuditMeta = {}
-): void {
+): Promise<void> {
   const plain = JSON.stringify({
     t: Date.now(),
     user: userId ?? '-',
@@ -48,12 +48,11 @@ export function audit(
     ip: meta.ip ?? '-',
     ua: (meta.ua ?? '-').slice(0, 200),
   });
-  encryptLog(e, plain).then((enc) => {
-    e.DB.prepare('INSERT INTO audit_logs (id, encrypted, created_at) VALUES (?, ?, ?)')
-      .bind(`al_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, enc, Date.now())
-      .run()
-      .catch(() => {});
-  });
+  const enc = await encryptLog(e, plain);
+  await e.DB.prepare('INSERT INTO audit_logs (id, encrypted, created_at) VALUES (?, ?, ?)')
+    .bind(`al_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`, enc, Date.now())
+    .run()
+    .catch(() => {});
 }
 
 export function clientMeta(request: Request): AuditMeta {

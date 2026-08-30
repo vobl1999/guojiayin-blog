@@ -36,6 +36,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } else {
     return new Response(JSON.stringify({ error: '无效操作。' }), { status: 400 });
   }
-  audit(e, locals.user.id, `user.${action}`, { target: id }, clientMeta(request));
+  await audit(e, locals.user.id, `user.${action}`, { target: id }, clientMeta(request));
   return new Response(JSON.stringify({ ok: true }));
 };

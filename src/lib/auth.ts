@@ -3,7 +3,7 @@
  */
 import { uid } from './ids';
 
-const ITERATIONS = 120_000;
+const ITERATIONS = 12_000; // 免费版 Pages CPU 限制下 120k 会超时；配合限流+Turnstile 兜底
 
 async function derive(password: string, saltHex: string, length = 32): Promise<string> {
   const saltBytes = new Uint8Array(saltHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)));

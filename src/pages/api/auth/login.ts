@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     .bind(Date.now() - FAIL_WINDOW, email, meta.ip ?? '-')
     .first<{ n: number }>();
   if ((recentFails?.n ?? 0) >= MAX_FAILS) {
-    audit(e, null, 'login.blocked', { email }, meta);
+    await audit(e, null, 'login.blocked', { email }, meta);
     return fail('尝试次数过多，请 15 分钟后再试。', 429);
   }
 
@@ -63,11 +63,11 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
 
   if (!user) {
     await recordAttempt(false);
-    audit(e, null, 'login.fail', { email, reason: 'unknown-email', mode }, meta);
+    await audit(e, null, 'login.fail', { email, reason: 'unknown-email', mode }, meta);
     return fail(GENERIC);
   }
   if (user.role === 'banned') {
-    audit(e, user.id, 'login.fail', { reason: 'banned' }, meta);
+    await audit(e, user.id, 'login.fail', { reason: 'banned' }, meta);
     return fail('账号已被封禁。', 403);
   }
 
@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       secure: !import.meta.env.DEV,
       maxAge: 30 * 86400,
     });
-    audit(e, userId, 'login.success', { mode }, meta);
+    await audit(e, userId, 'login.success', { mode }, meta);
     return new Response(JSON.stringify({ ok: true }));
   };
 
@@ -91,7 +91,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     const ok = await verifyPassword(password, user.password_salt, user.password_hash);
     if (!ok) {
       await recordAttempt(false);
-      audit(e, user.id, 'login.fail', { reason: 'bad-password' }, meta);
+      await audit(e, user.id, 'login.fail', { reason: 'bad-password' }, meta);
       return fail(GENERIC);
     }
     return finish(user.id);
@@ -119,7 +119,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       if (!sent.ok) {
         return fail(`邮件发送失败：${sent.error}（请检查 SMTP 配置）`, 500);
       }
-      audit(e, user.id, 'login.code-sent', {}, meta);
+      await audit(e, user.id, 'login.code-sent', {}, meta);
       return new Response(JSON.stringify({ ok: true, dev: sent.dev ?? false }));
     }
 
@@ -133,7 +133,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
         .first<{ id: string; code: string }>();
       if (!row || row.code !== code) {
         await recordAttempt(false);
-        audit(e, user.id, 'login.fail', { reason: 'bad-code' }, meta);
+        await audit(e, user.id, 'login.fail', { reason: 'bad-code' }, meta);
         return fail(GENERIC);
       }
       await e.DB.prepare(`UPDATE verify_codes SET consumed = 1 WHERE id = ?`).bind(row.id).run();
