@@ -1,10 +1,10 @@
 ---
 import Layout from '../components/Layout.astro';
 import { env } from '../lib/db';
-import { listAllTags } from '../lib/posts';
+import { listAllTags, uiLang } from '../lib/posts';
 
 const e = env(Astro.locals.runtime);
-const tags = await listAllTags(e);
+const tags = await listAllTags(e, uiLang(Astro.cookies.get('blogb_lang')?.value));
 ---
 
 <Layout title="标签">

@@ -39,7 +39,7 @@ if (id !== 'new' && !post) {
             <label class="field-label" for="pf-title">标题</label>
             <input class="input" id="pf-title" name="title" required maxlength="120" value={post?.title ?? ''} placeholder="文章标题" />
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem" class="field">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem" class="field">
             <div class="field" style="margin-bottom:0">
               <label class="field-label" for="pf-slug">网址别名（slug）</label>
               <input class="input" id="pf-slug" name="slug" maxlength="80" value={post?.slug ?? ''} placeholder="留空自动生成" />
@@ -49,6 +49,13 @@ if (id !== 'new' && !post) {
               <select class="select" id="pf-status" name="status">
                 <option value="draft" selected={post?.status === 'draft'}>草稿</option>
                 <option value="published" selected={post?.status === 'published'}>发布</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label class="field-label" for="pf-lang">语言（显示在对应语言界面）</label>
+              <select class="select" id="pf-lang" name="lang">
+                <option value="zh" selected={post?.lang !== 'en'}>中文界面</option>
+                <option value="en" selected={post?.lang === 'en'}>English 界面</option>
               </select>
             </div>
           </div>
@@ -130,6 +137,7 @@ if (id !== 'new' && !post) {
       slug: fd.get('slug') || '',
       tags: String(fd.get('tags') || '').split(/[,，]/).map((t) => t.trim()).filter(Boolean),
       status: fd.get('status'),
+      lang: fd.get('lang') === 'en' ? 'en' : 'zh',
       content: fd.get('content'),
     };
     if (form.dataset.id) payload.id = form.dataset.id;

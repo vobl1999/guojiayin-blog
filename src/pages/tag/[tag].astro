@@ -1,12 +1,12 @@
 ---
 import Layout from '../../components/Layout.astro';
 import { env } from '../../lib/db';
-import { listPostsByTag } from '../../lib/posts';
+import { listPostsByTag, uiLang } from '../../lib/posts';
 import { fmtDate, readMinutes } from '../../lib/format';
 
 const tag = Astro.params.tag!;
 const e = env(Astro.locals.runtime);
-const posts = await listPostsByTag(e, tag);
+const posts = await listPostsByTag(e, tag, uiLang(Astro.cookies.get('blogb_lang')?.value));
 ---
 
 <Layout title={`标签：${tag}`}>

@@ -21,6 +21,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const title = String(body.title ?? '').trim();
   const content = String(body.content ?? '');
   const status = body.status === 'published' ? 'published' : 'draft';
+  const lang = body.lang === 'en' ? 'en' : 'zh';
   const tags = Array.isArray(body.tags) ? body.tags.map((t: unknown) => String(t).trim().slice(0, 30)).filter(Boolean).slice(0, 8) : [];
   const id = body.id ? String(body.id) : null;
 
@@ -35,11 +36,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const existing = await e.DB.prepare('SELECT id FROM posts WHERE id = ?').bind(id).first();
     if (!existing) return new Response(JSON.stringify({ error: '文章不存在。' }), { status: 404 });
     await e.DB.prepare(
-      `UPDATE posts SET title = ?, content_md = ?, content_html = ?, excerpt = ?, tags = ?, status = ?, updated_at = ?,
+      `UPDATE posts SET title = ?, content_md = ?, content_html = ?, excerpt = ?, tags = ?, status = ?, lang = ?, updated_at = ?,
        published_at = CASE WHEN ? = 'published' THEN COALESCE(published_at, ?) ELSE published_at END
        WHERE id = ?`
     )
-      .bind(title, content, html, excerpt, JSON.stringify(tags), status, now, status, now, id)
+      .bind(title, content, html, excerpt, JSON.stringify(tags), status, lang, now, status, now, id)
       .run();
     await audit(e, guard.user.id, 'post.update', { id, status, title: title.slice(0, 60) }, clientMeta(request));
     return new Response(JSON.stringify({ ok: true, id }));
@@ -51,10 +52,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const postId = uid('p');
   await e.DB.prepare(
-    `INSERT INTO posts (id, slug, title, content_md, content_html, excerpt, tags, status, author_id, created_at, updated_at, published_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO posts (id, slug, title, content_md, content_html, excerpt, tags, status, lang, author_id, created_at, updated_at, published_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
-    .bind(postId, slug, title, content, html, excerpt, JSON.stringify(tags), status, guard.user.id, now, now, status === 'published' ? now : null)
+    .bind(postId, slug, title, content, html, excerpt, JSON.stringify(tags), status, lang, guard.user.id, now, now, status === 'published' ? now : null)
     .run();
   await audit(e, guard.user.id, 'post.create', { id: postId, slug, status, title: title.slice(0, 60) }, clientMeta(request));
   return new Response(JSON.stringify({ ok: true, id: postId, slug }));

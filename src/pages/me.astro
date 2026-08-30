@@ -1,7 +1,7 @@
 ---
 import Layout from '../components/Layout.astro';
 import { env } from '../lib/db';
-import { listPostsByAuthor, countCommentsForUser } from '../lib/posts';
+import { listPostsByAuthor, countCommentsForUser, uiLang } from '../lib/posts';
 import { fmtDate, avatarUrl } from '../lib/format';
 
 if (!Astro.locals.user) {
@@ -9,7 +9,7 @@ if (!Astro.locals.user) {
 }
 const user = Astro.locals.user;
 const e = env(Astro.locals.runtime);
-const posts = await listPostsByAuthor(e, user.id);
+const posts = await listPostsByAuthor(e, user.id, uiLang(Astro.cookies.get('blogb_lang')?.value));
 const commentCount = await countCommentsForUser(e, user.id);
 const genderText = user.gender === 'male' ? '男' : user.gender === 'female' ? '女' : user.gender === 'other' ? '其他' : '';
 ---

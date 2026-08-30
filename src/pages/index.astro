@@ -2,12 +2,13 @@
 import Layout from '../components/Layout.astro';
 import { SITE } from '../config/site';
 import { env } from '../lib/db';
-import { listPublishedPosts } from '../lib/posts';
+import { listPublishedPosts, uiLang } from '../lib/posts';
 import { fmtDate, readMinutes, avatarUrl } from '../lib/format';
 
 const e = env(Astro.locals.runtime);
+const lang = uiLang(Astro.cookies.get('blogb_lang')?.value);
 const page = Math.max(1, Number(Astro.url.searchParams.get('page') ?? 1) || 1);
-const { posts, total, pages } = await listPublishedPosts(e, page, SITE.pageSize);
+const { posts, total, pages } = await listPublishedPosts(e, lang, page, SITE.pageSize);
 ---
 
 <Layout title={SITE.title}>

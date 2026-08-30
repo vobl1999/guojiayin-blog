@@ -1,11 +1,12 @@
 ---
 import Layout from '../components/Layout.astro';
 import { env } from '../lib/db';
-import { listAllPublished } from '../lib/posts';
+import { listAllPublished, uiLang } from '../lib/posts';
 import { fmtDate } from '../lib/format';
 
 const e = env(Astro.locals.runtime);
-const posts = await listAllPublished(e);
+const all = await listAllPublished(e);
+const posts = all.filter((p) => p.lang === uiLang(Astro.cookies.get('blogb_lang')?.value));
 
 // 按年分组
 const byYear = new Map<number, typeof posts>();

@@ -122,10 +122,13 @@ const canonical = new URL(Astro.url.pathname, SITE.url).href;
       applyLang();
       document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
         btn.addEventListener('click', () => {
+          const nextLang = currentLang() === 'zh' ? 'en' : 'zh';
           try {
-            localStorage.setItem('blogb-lang', currentLang() === 'zh' ? 'en' : 'zh');
+            localStorage.setItem('blogb-lang', nextLang);
+            // 同步 Cookie：服务端按界面语言过滤文章列表，然后刷新
+            document.cookie = `blogb_lang=${nextLang}; path=/; max-age=31536000; samesite=lax`;
           } catch {}
-          applyLang();
+          location.reload();
         });
       });
 

@@ -3,10 +3,13 @@
  */
 import type { DBEnv } from './db';
 
+export type PostLang = 'zh' | 'en';
+
 export interface Post {
   id: string;
   slug: string;
   title: string;
+  lang: PostLang;
   content_md: string;
   content_html: string;
   excerpt: string;
@@ -24,6 +27,11 @@ export interface Post {
   comment_count?: number;
 }
 
+/** 从 Cookie 值取当前界面语言（默认中文）；调用方传 Astro.cookies.get('blogb_lang')?.value */
+export function uiLang(value: string | undefined | null): PostLang {
+  return value === 'en' ? 'en' : 'zh';
+}
+
 function parseTags(raw: string): string[] {
   try {
     const arr = JSON.parse(raw);
@@ -38,6 +46,7 @@ function rowToPost(r: Record<string, unknown>): Post {
     id: String(r.id),
     slug: String(r.slug),
     title: String(r.title),
+    lang: String(r.lang) === 'en' ? 'en' : 'zh',
     content_md: String(r.content_md),
     content_html: String(r.content_html),
     excerpt: String(r.excerpt),
@@ -61,15 +70,17 @@ const SELECT_POST = `
     (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.status = 'visible') AS comment_count
   FROM posts p JOIN users u ON u.id = p.author_id`;
 
-/** 已发布文章分页列表（新→旧） */
-export async function listPublishedPosts(e: DBEnv, page = 1, pageSize = 10) {
+/** 已发布文章分页列表（新→旧，按界面语言过滤） */
+export async function listPublishedPosts(e: DBEnv, lang: PostLang = 'zh', page = 1, pageSize = 10) {
   const offset = Math.max(0, page - 1) * pageSize;
   const { results } = await e.DB.prepare(
-    `${SELECT_POST} WHERE p.status = 'published' ORDER BY p.published_at DESC LIMIT ? OFFSET ?`
+    `${SELECT_POST} WHERE p.status = 'published' AND p.lang = ? ORDER BY p.published_at DESC LIMIT ? OFFSET ?`
   )
-    .bind(pageSize, offset)
+    .bind(lang, pageSize, offset)
     .all();
-  const count = await e.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE status = 'published'`).first<{ n: number }>();
+  const count = await e.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE status = 'published' AND lang = ?`)
+    .bind(lang)
+    .first<{ n: number }>();
   return {
     posts: (results as unknown as Record<string, unknown>[]).map(rowToPost),
     total: count?.n ?? 0,
@@ -93,18 +104,22 @@ export async function listAllPosts(e: DBEnv) {
   return (results as unknown as Record<string, unknown>[]).map(rowToPost);
 }
 
-export async function listPostsByTag(e: DBEnv, tag: string) {
+export async function listPostsByTag(e: DBEnv, tag: string, lang: PostLang = 'zh') {
   const { results } = await e.DB.prepare(
-    `${SELECT_POST} WHERE p.status = 'published' ORDER BY p.published_at DESC LIMIT 60`
-  ).all();
+    `${SELECT_POST} WHERE p.status = 'published' AND p.lang = ? ORDER BY p.published_at DESC LIMIT 60`
+  )
+    .bind(lang)
+    .all();
   const all = (results as unknown as Record<string, unknown>[]).map(rowToPost);
   return all.filter((p) => p.tags.includes(tag));
 }
 
-export async function listAllTags(e: DBEnv): Promise<{ tag: string; count: number }[]> {
+export async function listAllTags(e: DBEnv, lang: PostLang = 'zh'): Promise<{ tag: string; count: number }[]> {
   const { results } = await e.DB.prepare(
-    `SELECT tags FROM posts WHERE status = 'published'`
-  ).all();
+    `SELECT tags FROM posts WHERE status = 'published' AND lang = ?`
+  )
+    .bind(lang)
+    .all();
   const counts = new Map<string, number>();
   for (const r of results as unknown as { tags: string }[]) {
     for (const t of parseTags(r.tags)) counts.set(t, (counts.get(t) ?? 0) + 1);
@@ -112,11 +127,11 @@ export async function listAllTags(e: DBEnv): Promise<{ tag: string; count: numbe
   return [...counts.entries()].map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count);
 }
 
-export async function listPostsByAuthor(e: DBEnv, userId: string) {
+export async function listPostsByAuthor(e: DBEnv, userId: string, lang: PostLang = 'zh') {
   const { results } = await e.DB.prepare(
-    `${SELECT_POST} WHERE p.status = 'published' AND p.author_id = ? ORDER BY p.published_at DESC LIMIT 50`
+    `${SELECT_POST} WHERE p.status = 'published' AND p.author_id = ? AND p.lang = ? ORDER BY p.published_at DESC LIMIT 50`
   )
-    .bind(userId)
+    .bind(userId, lang)
     .all();
   return (results as unknown as Record<string, unknown>[]).map(rowToPost);
 }

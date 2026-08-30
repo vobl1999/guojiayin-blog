@@ -1,7 +1,7 @@
 ---
 import Layout from '../../components/Layout.astro';
 import { env } from '../../lib/db';
-import { listPostsByAuthor, countCommentsForUser } from '../../lib/posts';
+import { listPostsByAuthor, countCommentsForUser, uiLang } from '../../lib/posts';
 import { fmtDate, avatarUrl } from '../../lib/format';
 
 const { username } = Astro.params;
@@ -17,7 +17,7 @@ if (!profile) {
   return Astro.redirect('/404');
 }
 
-const posts = await listPostsByAuthor(e, profile.id);
+const posts = await listPostsByAuthor(e, profile.id, uiLang(Astro.cookies.get('blogb_lang')?.value));
 const commentCount = await countCommentsForUser(e, profile.id);
 const genderText = profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : profile.gender === 'other' ? '其他' : '';
 ---

@@ -53,8 +53,8 @@ VALUES ('u_seed_admin', 'gjy@vobl.cn', '${hash}', '${salt}', 'jiayin', '郭嘉�
 
 for (const p of posts) {
   let raw = readFileSync(`${SRC}/${p.file}`, 'utf8');
-  // 去掉 frontmatter
-  raw = raw.replace(/^---[\s\S]*?---\n/, '');
+  // 去掉 frontmatter（兼容 Windows CRLF）
+  raw = raw.replace(/^---[\s\S]*?---\r?\n?/, '').trimStart();
   // 把本地图片路径换成 /media/ 同域图
   raw = raw.replace(/!\[([^\]]*)\]\([^)]*Jiayin%20Guo_000(\d)\.jpg\)/g, (_m, alt, n) => `![${alt}](/media/posts/sony-000${n}.webp)`);
   const html = md.render(raw);
