@@ -1,0 +1,89 @@
+---
+import Layout from '../components/Layout.astro';
+import { env } from '../lib/db';
+import { SITE } from '../config/site';
+
+const e = env(Astro.locals.runtime);
+const sitekey = e.TURNSTILE_SITEKEY || '';
+const rawNext = Astro.url.searchParams.get('next') || '/';
+// 防开放重定向：只允许站内路径
+const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+---
+
+<Layout title="人机验证" noindex>
+  <section class="container" style="min-height: 60vh; display: grid; place-items: center">
+    <div class="glass auth-panel text-center" data-reveal style="max-width: 30rem" data-next={next}>
+      <a class="wordmark" href="/">{SITE.name}<span class="wordmark-dot">.</span></a>
+      <h1 class="auth-title" style="margin-block: 1rem 0.4rem">请先完成人机验证</h1>
+      <p class="muted small" style="margin-bottom: 1.6rem">验证通过后可浏览全站，24 小时内无需重复。</p>
+
+      {sitekey ? (
+        <div style="display:flex;justify-content:center" data-turnstile-wrap>
+          <div
+            class="cf-turnstile"
+            data-sitekey={sitekey}
+            data-theme="auto"
+            data-callback="gateCaptchaDone"
+            data-error-callback="gateCaptchaError"
+          ></div>
+        </div>
+      ) : (
+        <p class="muted small">人机验证未配置。</p>
+      )}
+
+      <p class="form-error" data-gate-msg></p>
+      <div class="spinner hidden" data-gate-spinner></div>
+    </div>
+  </section>
+</Layout>
+
+<script is:inline src={sitekey ? 'https://challenges.cloudflare.com/turnstile/v0/api.js' : undefined} async defer></script>
+
+<script>
+  const nextUrl = document.querySelector<HTMLElement>('[data-next]')?.dataset.next || '/';
+  const msgEl = document.querySelector<HTMLElement>('[data-gate-msg]');
+  const spinner = document.querySelector<HTMLElement>('[data-gate-spinner]');
+
+  // Turnstile 校验成功后的全局回调（由组件 data-callback 触发）
+  (window as unknown as { gateCaptchaDone: (t: string) => void }).gateCaptchaDone = async (token) => {
+    spinner?.classList.remove('hidden');
+    try {
+      const res = await fetch('/api/gate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cfToken: token }),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (res.ok && data.ok) {
+        location.href = nextUrl;
+      } else {
+        msgEl!.textContent = data.error || '验证失败，请重试。';
+        spinner?.classList.add('hidden');
+      }
+    } catch {
+      msgEl!.textContent = '网络错误，请重试。';
+      spinner?.classList.add('hidden');
+    }
+  };
+
+  (window as unknown as { gateCaptchaError: () => void }).gateCaptchaError = () => {
+    msgEl!.textContent = '验证组件加载失败，请刷新重试。';
+  };
+</script>
+
+<style>
+  .spinner {
+    width: 1.4rem;
+    height: 1.4rem;
+    margin: 1rem auto 0;
+    border: 2px solid var(--line);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
