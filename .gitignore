@@ -11,6 +11,7 @@ node_modules/
 .dev.vars
 .env
 .env.*
+.audit-key
 
 # local seed artifacts (含一次性 SQL/图片，不入库)
 seed/
