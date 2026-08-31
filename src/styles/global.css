@@ -779,18 +779,18 @@ main { min-height: 62vh; }
   }
 }
 
-/* ── 品牌 Logo（圆润连笔） ────────────────────────────────── */
+/* ── 品牌 Logo（连笔 vobl） ──────────────────────────────── */
 .brand-mark {
-  width: 1.9rem;
-  height: 1.9rem;
+  height: 1.55rem;
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  display: grid;
-  place-items: center;
 }
 
 .brand-mark svg {
-  width: 100%;
   height: 100%;
+  width: auto;
+  display: block;
 }
 
 .wordmark {
