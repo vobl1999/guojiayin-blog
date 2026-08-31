@@ -1,14 +1,14 @@
 /**
- * 博客站配置 —— blog.vobl.cn
- * 与主站（www.vobl.cn）共用设计语言：Fraunces + Inter、暖纸色调、金色点缀
+ * 博客站配置 —— blog.vobl.cn（voblog / 沃博客）
+ * 白色 + 浅蓝主题、圆润字体（Nunito / 幼圆）
  */
 export const SITE = {
-  name: 'Guo Jiayin',
-  nameZh: '郭嘉胤',
-  title: 'Guo Jiayin', // 站点标题（不含多余标签）
+  name: 'voblog',
+  nameZh: '沃博客',
+  title: 'voblog', // 站点标题（不含多余标签）
   url: 'https://blog.vobl.cn',
-  description: '郭嘉胤的博客：摄影、观看与生活的随笔。',
-  // 回到个人主页（作品集 www.vobl.cn）的按钮
+  description: '沃博客（voblog）—— 郭嘉胤的博客：摄影、观看与生活的随笔。',
+  // 回到个人主页（作品集 www.vobl.cn）
   portfolioUrl: 'https://www.vobl.cn',
   portfolioLabel: '回到主页',
   email: 'gjy@vobl.cn',

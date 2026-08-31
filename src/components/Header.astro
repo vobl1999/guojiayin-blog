@@ -1,5 +1,6 @@
 ---
 import { SITE } from '../config/site';
+import Logo from './Logo.astro';
 
 const user = Astro.locals.user;
 const path = Astro.url.pathname;
@@ -8,6 +9,7 @@ const nav = [
   { label: '首页', i18n: 'nav.home', href: '/' },
   { label: '标签', i18n: 'nav.tags', href: '/tags' },
   { label: '归档', i18n: 'nav.archive', href: '/archive' },
+  { label: '数据', i18n: 'nav.stats', href: '/stats' },
 ];
 
 const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
@@ -16,8 +18,10 @@ const avatarHref = user?.avatarKey ? `/media/${user.avatarKey}` : null;
 
 <div class="site-header">
   <div class="header-bar glass-strong">
-    <a class="wordmark" href="/" aria-label="Home">
-      {SITE.name}<span class="wordmark-dot">.</span>
+    <a class="wordmark" href="/" aria-label="voblog">
+      <span class="brand-mark"><Logo size={26} /></span>
+      <span>{SITE.name}<span class="wordmark-dot">.</span></span>
+      <span class="zh-name">{SITE.nameZh}</span>
     </a>
 
     <nav class="nav" aria-label="Primary">
@@ -28,13 +32,6 @@ const avatarHref = user?.avatarKey ? `/media/${user.avatarKey}` : null;
           </a>
         ))
       }
-      <a class="portfolio-btn" href={SITE.portfolioUrl} target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M15 3h6v6"></path><path d="M10 14 21 3"></path>
-          <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
-        </svg>
-        <span data-i18n="nav.portfolio">{SITE.portfolioLabel}</span>
-      </a>
       <button class="lang-toggle" data-lang-toggle aria-label="Switch language">EN</button>
       <button class="theme-toggle" data-theme-toggle aria-label="Toggle dark mode">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">

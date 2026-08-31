@@ -3,6 +3,7 @@ import Layout from '../../components/Layout.astro';
 import { env } from '../../lib/db';
 import { getPostBySlug, listComments, bumpViews, type Comment } from '../../lib/posts';
 import { fmtDateTime, readMinutes, avatarUrl } from '../../lib/format';
+import { extractToc } from '../../lib/markdown';
 
 const slug = Astro.params.slug!;
 const e = env(Astro.locals.runtime);
@@ -23,6 +24,9 @@ const user = Astro.locals.user;
 const top = comments.filter((c) => !c.parent_id && c.status === 'visible');
 const repliesOf = (id: string) => comments.filter((c) => c.parent_id === id && c.status === 'visible');
 
+// 左侧章节目录（h2/h3）
+const toc = extractToc(post.content_html);
+
 const postJsonLd = JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -37,32 +41,56 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
 ---
 
 <Layout title={post.title} description={post.excerpt} noindex={post.status !== 'published'}>
-  <article class="container-narrow section" style="padding-bottom: 1rem">
-    <header data-reveal>
-      <p class="label">
-        {fmtDateTime(post.published_at)}
-        {post.status === 'draft' && <> · <span data-i18n="post.draft">草稿</span></>}
-      </p>
-      <h1 class="display-1" style="margin-block: 0.9rem 1rem">{post.title}</h1>
-      <div class="post-meta" style="margin-bottom: 1.6rem">
-        {
-          post.author_avatar && (
-            <a href={`/u/${post.author_username}`} style="display:inline-flex;align-items:center;gap:0.4rem">
-              <img class="avatar-mini" src={avatarUrl(post.author_avatar) ?? ''} alt="" width="22" height="22" />
-              {post.author_name || post.author_username}
-            </a>
-          )
-        }
-        <span>{readMinutes(post.content_md)} <span data-i18n="post.read">分钟阅读</span></span>
-        <span>{post.views} <span data-i18n="post.views">次阅读</span></span>
-        {
-          post.tags.map((t) => <a class="tag" href={`/tag/${encodeURIComponent(t)}`}>{t}</a>)
-        }
-      </div>
-    </header>
+  <!-- 阅读进度条 -->
+  <div class="read-progress" data-read-progress></div>
 
-    <div class="prose" data-reveal set:html={post.content_html} />
-  </article>
+  <div class="container post-layout" style="padding-top: clamp(2rem, 5vw, 3.5rem); padding-bottom: 1rem">
+    {
+      toc.length > 0 && (
+        <aside class="post-toc glass glass-card" aria-label="目录">
+          <p class="toc-title">目录</p>
+          <nav data-toc-nav>
+            {
+              toc.map((item) => (
+                <a class:list={[`toc-h${item.level}`]} href={`#${item.id}`} data-toc-link={item.id}>
+                  {item.text}
+                </a>
+              ))
+            }
+          </nav>
+        </aside>
+      )
+    }
+
+    <div class="post-body">
+      <article>
+        <header data-reveal>
+          <p class="label">
+            {fmtDateTime(post.published_at)}
+            {post.status === 'draft' && <> · <span data-i18n="post.draft">草稿</span></>}
+          </p>
+          <h1 class="display-1" style="margin-block: 0.9rem 1rem">{post.title}</h1>
+          <div class="post-meta" style="margin-bottom: 1.6rem">
+            {
+              post.author_avatar && (
+                <a href={`/u/${post.author_username}`} style="display:inline-flex;align-items:center;gap:0.4rem">
+                  <img class="avatar-mini" src={avatarUrl(post.author_avatar) ?? ''} alt="" width="22" height="22" />
+                  {post.author_name || post.author_username}
+                </a>
+              )
+            }
+            <span>{readMinutes(post.content_md)} <span data-i18n="post.read">分钟阅读</span></span>
+            <span>{post.views} <span data-i18n="post.views">次阅读</span></span>
+            {
+              post.tags.map((t) => <a class="tag" href={`/tag/${encodeURIComponent(t)}`}>{t}</a>)
+            }
+          </div>
+        </header>
+
+        <div class="prose" data-reveal set:html={post.content_html} />
+      </article>
+    </div>
+  </div>
 
   <!-- 评论 -->
   <section class="container-narrow" style="padding-bottom: 3rem" data-reveal>
@@ -154,6 +182,38 @@ const loginNext = encodeURIComponent(`/post/${post.slug}`);
 </Layout>
 
 <script>
+  // ── 阅读进度条 ───────────────────────────────────────────
+  const readBar = document.querySelector<HTMLElement>('[data-read-progress]');
+  if (readBar) {
+    const updateProgress = () => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      readBar.style.width = `${max > 0 ? Math.min(100, (doc.scrollTop / max) * 100) : 0}%`;
+    };
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+  }
+
+  // ── 目录高亮当前章节 ─────────────────────────────────────
+  const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+  if (tocLinks.length) {
+    const headings = tocLinks
+      .map((a) => document.getElementById(a.dataset.tocLink ?? ''))
+      .filter((el): el is HTMLElement => !!el);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = (entry.target as HTMLElement).id;
+            tocLinks.forEach((a) => a.classList.toggle('is-active', a.dataset.tocLink === id));
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -70% 0px' }
+    );
+    headings.forEach((h) => observer.observe(h));
+  }
+
   const form = document.querySelector<HTMLFormElement>('#comment-form');
   const textarea = document.querySelector<HTMLTextAreaElement>('#comment-text');
   const msgEl = document.querySelector<HTMLElement>('[data-comment-msg]');

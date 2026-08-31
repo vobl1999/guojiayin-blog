@@ -1,0 +1,31 @@
+---
+/** 品牌 Logo：圆润连笔的「v」字形，浅蓝渐变描边 */
+interface Props {
+  size?: number;
+}
+
+const { size = 30 } = Astro.props;
+---
+
+<svg
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
+>
+  <defs>
+    <linearGradient id="vb-grad" x1="2" y1="3" x2="22" y2="21" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8ec5f7"></stop>
+      <stop offset="0.55" stop-color="#5b9bd5"></stop>
+      <stop offset="1" stop-color="#2f6fd0"></stop>
+    </linearGradient>
+  </defs>
+  <path
+    d="M7.4 4.1 C 12.1 4.1, 14.9 8.6, 14.9 13.3 C 14.9 17.3, 11.9 19.9, 7.6 19.5 C 5.5 19.2, 4 17.8, 3.6 15.9 C 3.2 13.9, 4.6 11.8, 6.7 11.4 C 8.8 11, 10.8 12.1, 12.5 14.4 C 14.4 16.8, 16.7 19.2, 19.6 20.9"
+    stroke="url(#vb-grad)"
+    stroke-width="2.7"
+    stroke-linecap="round"
+  ></path>
+</svg>

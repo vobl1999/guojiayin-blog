@@ -1,5 +1,6 @@
 ---
 import { SITE } from '../config/site';
+import Logo from './Logo.astro';
 
 const year = new Date().getFullYear();
 ---
@@ -7,7 +8,11 @@ const year = new Date().getFullYear();
 <footer class="site-footer">
   <div class="footer-inner">
     <div>
-      <a class="wordmark" href="/">{SITE.name}<span class="wordmark-dot">.</span></a>
+      <a class="wordmark" href="/">
+        <span class="brand-mark"><Logo size={22} /></span>
+        <span>{SITE.name}<span class="wordmark-dot">.</span></span>
+        <span class="zh-name">{SITE.nameZh}</span>
+      </a>
       <p class="footer-note" style="margin-top: 0.6rem" data-i18n="footer.about">
         关于摄影、观看与生活。
       </p>
@@ -16,11 +21,14 @@ const year = new Date().getFullYear();
       <a href="/" data-i18n="footer.home">博客首页</a>
       <a href="/archive" data-i18n="footer.archive">文章归档</a>
       <a href="/rss.xml" data-i18n="footer.rss">RSS 订阅</a>
-      <a href={SITE.portfolioUrl} target="_blank" rel="noopener noreferrer" data-i18n="footer.portfolio">作品集</a>
+    </div>
+    <div class="footer-links">
+      <a href={SITE.portfolioUrl} target="_blank" rel="noopener noreferrer" data-i18n="nav.portfolio">
+        ← {SITE.portfolioLabel}
+      </a>
     </div>
     <div class="footer-note">
-      © {year} {SITE.name}. All photographs and words are the property of the author.<br />
-      Set in Fraunces &amp; Inter. Built with Astro.
+      © {year} {SITE.nameZh} · {SITE.name}. Built with Astro on Cloudflare.
     </div>
   </div>
 </footer>

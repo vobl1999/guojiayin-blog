@@ -1,0 +1,82 @@
+---
+import Layout from '../components/Layout.astro';
+import Chart from '../components/Chart.astro';
+import { env } from '../lib/db';
+
+const e = env(Astro.locals.runtime);
+const DAY = 86_400_000;
+
+const labelOf = (day: number) => {
+  const d = new Date(day * DAY);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** 按天聚合 + 补零（最近 14 天，倒序→正序） */
+async function series(sql: string, params: unknown[] = []): Promise<{ values: number[]; labels: string[] }> {
+  const { results } = await e.DB.prepare(sql).bind(...params).all();
+  const map = new Map<number, number>();
+  for (const r of results as unknown as { day: number; n: number }[]) {
+    map.set(Number(r.day), Number(r.n));
+  }
+  const today = Math.floor(Date.now() / DAY);
+  const values: number[] = [];
+  const labels: string[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const day = today - i;
+    values.push(map.get(day) ?? 0);
+    labels.push(labelOf(day));
+  }
+  return { values, labels };
+}
+
+const pv = await series(
+  `SELECT CAST(created_at / ${DAY} AS INTEGER) AS day, COUNT(*) AS n FROM page_views GROUP BY day`
+);
+const newUsers = await series(
+  `SELECT CAST(created_at / ${DAY} AS INTEGER) AS day, COUNT(*) AS n FROM users GROUP BY day`
+);
+const comments = await series(
+  `SELECT CAST(created_at / ${DAY} AS INTEGER) AS day, COUNT(*) AS n FROM comments GROUP BY day`
+);
+const posts = await series(
+  `SELECT CAST(published_at / ${DAY} AS INTEGER) AS day, COUNT(*) AS n FROM posts WHERE status = 'published' GROUP BY day`
+);
+
+const totals = await e.DB.prepare(
+  `SELECT
+     (SELECT COUNT(*) FROM page_views) AS pv,
+     (SELECT COUNT(*) FROM users) AS users,
+     (SELECT COUNT(*) FROM comments) AS comments,
+     (SELECT COUNT(*) FROM posts WHERE status = 'published') AS posts`
+).first<{ pv: number; users: number; comments: number; posts: number }>();
+---
+
+<Layout title="站点数据" description="沃博客 voblog 实时站点数据">
+  <section class="container section">
+    <div data-reveal>
+      <p class="label">LIVE DATA</p>
+      <h1 class="display-1" style="margin-block: 0.8rem 1.6rem" data-i18n="nav.stats">站点数据</h1>
+    </div>
+
+    <div class="stats-grid" data-reveal>
+      {
+        [
+          { key: 'pv', title: '访问量（近 14 天）', total: totals?.pv ?? 0, unit: '次', series: pv, id: 'pv' },
+          { key: 'users', title: '新注册（近 14 天）', total: totals?.users ?? 0, unit: '人', series: newUsers, id: 'users' },
+          { key: 'comments', title: '评论（近 14 天）', total: totals?.comments ?? 0, unit: '条', series: comments, id: 'comments' },
+          { key: 'posts', title: '发布文章（近 14 天）', total: totals?.posts ?? 0, unit: '篇', series: posts, id: 'posts' },
+        ].map((s) => (
+          <div class="glass glass-card stats-card">
+            <h3>{s.title}</h3>
+            <p class="stats-num">
+              {s.total} <span class="small muted" style="font-weight:500">{s.unit}</span>
+            </p>
+            <Chart id={`c-${s.id}`} values={s.series.values} labels={s.series.labels} />
+          </div>
+        ))
+      }
+    </div>
+
+    <p class="small muted mt-2">数据为服务端实时统计，每次打开本页都会重新计算。</p>
+  </section>
+</Layout>
